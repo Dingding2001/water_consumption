@@ -1,0 +1,946 @@
+to water-consumption-model
+  ask people with [relationship != 1]
+  [
+    set Electric-Footbath [] ;10
+    set Water-heater []
+    set showerhead []    
+    set thermostatic 0 
+    set Faucet []        
+    set Dishwasher []   ;15
+    set sterilizer []   
+    set sweeping-robot []  
+    set Electric-mop []     
+    set Intelligent-Toilet []   
+    set Washing-machine []   
+    set Dry-or-sterilize 4   
+    set pressure []   ;22
+    set microwave-oven []   
+    set soymilk []   
+    set Ele-oven []   
+    set Terminal-water []   
+    set Kitchen-water-heat []   
+    set radiator-bag []   
+  ]
+  
+  ;搬了家的更新器具
+  house-mover
+  
+  ;更新器具
+  update-appliance     
+  
+  ;先让hhd相同的人拥有和户主一样的器具，然后预测所有人的用水行为
+  update-behavior
+  
+  ;计算水费
+  calculate-water 
+  
+  ask people [set housemover 0]
+  
+  print "water consumption model finished"
+end
+
+;计算用水量
+to calculate-water
+  let file-name "Water Energy Consumption/water fee.csv"
+  let filename "water fee.csv"
+  py:set "filename" filename
+  (py:run
+    "root_dir = os.getcwd()"
+    "for root, dirs, files in os.walk(root_dir):"
+    "  for file in files:"
+    "    if file == filename:"
+    "        file_path = os.path.join(root, file)"
+    "        os.remove(file_path)"
+  )
+  file-open file-name
+  file-print "pid,hhd,bath-fre-winter,bath-fre-spring,bath-fre-summer,bath-time-winter,bath-time-spring,bath-time-summer,footbath-fre-winter,footbath-fre-spring,footbath-fre-summer,bread-machine-fre,ele-oven-fre,soymilk-fre,ele-stewpot-fre,gasstove-fre,pressure-fre,rice-fre,ele-pan-fre,dishes-num,washes-avenum,wash-time,wash-cycle,Sweep-fre,Mop-fre,handwash-fre-winter,handwash-fre-spring,handwash-fre-summer,washmachine-fre-winter,washmachine-fre-spring,washmachine-fre-summer,laundry-time,Num-clothes-rinsed,time-heatequipment-winter"
+  ask people
+  [
+    file-print (word pid","hhd","Bath-fre-winter","Bath-fre-spring","Bath-fre-summer","Bath-time-winter","Bath-time-spring","Bath-time-summer","footbath-fre-winter","footbath-fre-spring","footbath-fre-summer","bread-machine-fre","ele-oven-fre","soymilk-fre","ele-stewpot-fre","gasstove-fre","pressure-fre","rice-fre","ele-pan-fre","dishes-num","washes-avenum","wash-time","wash-cycle","Sweep-fre","Mop-fre","handwash-fre-winter","handwash-fre-spring","handwash-fre-summer","washmachine-fre-winter","washmachine-fre-spring","washmachine-fre-summer","laundry-time","Num-clothes-rinsed","time-heatequipment-winter)
+  ]
+  file-close
+  
+  (py:run "subprocess.run(['python', 'Water Energy Consumption/calculate_water_fee.py'])")
+  
+  file-open "Water Energy Consumption/water fee.csv"
+  while [not file-at-end?]
+  [
+    let data csv:from-row file-read-line
+    if item 0 data != "pid"
+    [
+      let pid1 item 0 data
+      ask one-of people with [pid = pid1]
+      [
+            set winter-consume item 42 data
+            set spring-consume item 43 data
+            set summer-consume item 44 data
+            set year-consume item 45 data
+  
+            set family-water-winter item 46 data
+            set family-water-spring item 47 data
+            set family-water-summer item 48 data
+            set family-water-year item 49 data
+  
+            set winter-fee item 50 data
+            set spring-fee item 51 data
+            set summer-fee item 52 data
+            set year-fee item 53 data
+  
+            set family-winter-fee item 54 data
+            set family-spring-fee item 55 data
+            set family-summer-fee item 56 data
+            set family-year-fee item 57 data 
+      ]
+    ]
+  ]
+  file-close
+end
+
+to generate-appliance-needed
+  ask people with [relationship = 1]
+  [
+    set Electric-Footbath [] ;10
+    set Water-heater []
+    set showerhead []    
+    set thermostatic 0 
+    set Faucet []        
+    set Dishwasher []   ;15
+    set sterilizer []   
+    set sweeping-robot []  
+    set Electric-mop []     
+    set Intelligent-Toilet []   
+    set Washing-machine []   
+    set Dry-or-sterilize 4   
+    set pressure []   ;22
+    set microwave-oven []   
+    set soymilk []   
+    set Ele-oven []   
+    set Terminal-water []   
+    set Kitchen-water-heat []   
+    set radiator-bag []   
+  ]
+  ;step 1: output household's attributes
+  let file-name "Water Energy Consumption/people water appliances.csv"
+  let filename "people water appliances.csv"
+  py:set "filename" filename
+  (py:run
+    "root_dir = os.getcwd()"
+    "for root, dirs, files in os.walk(root_dir):"
+    "  for file in files:"
+    "    if file == filename:"
+    "        file_path = os.path.join(root, file)"
+    "        os.remove(file_path)"
+  )
+  file-open file-name
+  file-print "pid,gender,age,permonth_income,education,status,family_member,minor,retired,hhd_income"
+  ask people with [relationship = 1]
+  [
+    let gender1 0
+    ifelse gender = 0 [set gender1 2][set gender1 gender]
+    if hhd-income < 100000 [set hhd-income-group 1]
+    if hhd-income >= 100000 and hhd-income < 200000 [set hhd-income-group 2]
+    if hhd-income >= 200000 and hhd-income < 300000 [set hhd-income-group 3]
+    if hhd-income >= 300000 and hhd-income < 500000 [set hhd-income-group 4]
+    if hhd-income >= 500000 and hhd-income < 700000 [set hhd-income-group 5]
+    if hhd-income >= 700000 and hhd-income < 1000000 [set hhd-income-group 6]
+    if hhd-income >= 1000000 [set hhd-income-group 7]
+    
+    if income < 3000 [set income-group 1]
+    if income >= 3000 and income < 4500 [set income-group 2]
+    if income >= 4500 and income < 6000 [set income-group 3]
+    if income >= 6000 and income < 8000 [set income-group 4]
+    if income >= 8000 and income < 10000 [set income-group 5]
+    if income >= 10000 and income < 15000 [set income-group 6]
+    if income >= 15000 [set income-group 7]
+    let child count people with [hhd = [hhd] of myself and age <= 18]
+    let old count people with [hhd = [hhd] of myself and status = 4]
+    file-print (word pid","gender1","age-group","income-group","education","status","number","child","old","hhd-income-group)
+  ]
+  file-close
+  
+  (py:run "subprocess.run(['python', 'Water Energy Consumption/predict_water_appliances.py'])")
+  
+  file-open "Water Energy Consumption/people water appliances.csv"
+  while [not file-at-end?]
+  [
+    let data csv:from-row file-read-line
+    if item 0 data != "pid"
+    [
+      let pid1 item 0 data
+      ask one-of people with [pid = pid1]
+      [
+      ;bathing-appliances
+      let num-Electric-Footbath-needed item 10 data 
+        if num-Electric-Footbath-needed = 1 [set Electric-Footbath (list 6 random 7)]
+      let type-Water-heater-needed item 11 data 
+        if type-Water-heater-needed = 1 [set Water-heater (list 1 6 random 7)]
+        if type-Water-heater-needed = 2 [set Water-heater (list 2 6 random 7)]
+        if type-Water-heater-needed = 3 [set Water-heater (list 3 8 random 9)]
+        if type-Water-heater-needed = 4 [set Water-heater (list 4 15 random 16)]
+        if type-Water-heater-needed = 5 [set Water-heater (list 5 15 random 16)]
+        if type-Water-heater-needed = 6 [set Water-heater []]
+        if type-Water-heater-needed = 7 [set Water-heater (list 7 6 random 7)]
+      
+      let num-showerhead-needed item 12 data 
+        if num-showerhead-needed = 1 [set showerhead (list 1 10 random 11)]
+        if num-showerhead-needed = 2 [set showerhead (list 2 10 random 11)]
+        if num-showerhead-needed = 3 [set showerhead (list 3 10 random 11)]
+      
+      set thermostatic item 13 data
+      let num-Faucet-needed item 14 data 
+        if num-Faucet-needed = 1 [set Faucet (list 1 5 random 6)]
+        if num-Faucet-needed = 2 [set Faucet (list 2 5 random 6)]
+        if num-Faucet-needed = 3 [set Faucet (list 3 5 random 6)]      
+      
+      ;cleaning-appliances
+      let num-Dishwasher-needed item 15 data
+        if num-Dishwasher-needed = 1 [set Dishwasher (list 10 random 11)]
+      let num-sterilizer-needed item 16 data 
+        if num-sterilizer-needed = 1 [set sterilizer (list 8 random 9)]
+      let num-sweeping-robot-needed item 17 data 
+        if num-sweeping-robot-needed = 1 [set sweeping-robot (list 10 random 11)]
+      let num-Electric-mop-needed item 18 data 
+        if num-Electric-mop-needed = 1 [set Electric-mop (list 10 random 11)]
+      let num-Intelligent-Toilet-needed item 19 data 
+        if num-Intelligent-Toilet-needed = 1 [set Intelligent-Toilet (list 10 random 11)]
+      let num-Washing-machine-needed item 20 data 
+        if num-Washing-machine-needed = 1 [set Washing-machine (list 1 10 random 11)]
+        if num-Washing-machine-needed = 2 [set Washing-machine (list 2 10 random 11)]
+        if num-Washing-machine-needed = 3 [set Washing-machine (list 3 8 random 9)]
+        if num-Washing-machine-needed = 4 [set Washing-machine []]
+     
+      if length Washing-machine > 0 [set Dry-or-sterilize item 21 data]
+    
+      ;cooking-appliances
+      let num-pressure-needed item 22 data
+        if num-pressure-needed = 1 [set pressure (list 8 random 9)]
+      let num-microwave-oven-needed item 23 data 
+        if num-microwave-oven-needed = 1 [set microwave-oven (list 10 random 11)]
+      let num-soymilk-needed item 24 data 
+        if num-soymilk-needed = 1 [set soymilk (list 6 random 7)]
+      let num-Ele-oven-needed item 25 data
+        if num-Ele-oven-needed = 1 [set Ele-oven (list 6 random 7)]
+      let num-Terminal-water-needed item 26 data 
+        if num-Terminal-water-needed = 1 [set Terminal-water (list 5 random 6)]
+      let num-Kitchen-water-heat-needed item 27 data 
+        if num-Kitchen-water-heat-needed = 1 [set Kitchen-water-heat (list 8 random 9)]
+      
+      ;HVAC-appliances
+      let num-radiator-bag-needed item 28 data 
+        if num-radiator-bag-needed = 1 [set radiator-bag (list 2 random 3)]        
+      ]
+    ]
+  ] 
+    file-close
+  
+  ask people with [relationship != 1]
+  [
+    let hhd1 hhd
+    set Electric-Footbath [Electric-Footbath] of one-of people with [hhd = hhd1 and relationship = 1]
+         set Water-heater [Water-heater] of one-of people with [hhd = hhd1 and relationship = 1]   
+         set showerhead [showerhead] of one-of people with [hhd = hhd1 and relationship = 1]  
+         set thermostatic [thermostatic] of one-of people with [hhd = hhd1 and relationship = 1]   
+         set Faucet [Faucet] of one-of people with [hhd = hhd1 and relationship = 1]        
+         set Dishwasher [Dishwasher] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set sterilizer [sterilizer] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set sweeping-robot [sweeping-robot] of one-of people with [hhd = hhd1 and relationship = 1]   
+         set Electric-mop [Electric-mop] of one-of people with [hhd = hhd1 and relationship = 1]      
+         set Intelligent-Toilet [Intelligent-Toilet] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set Washing-machine [Washing-machine] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set Dry-or-sterilize [Dry-or-sterilize] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set pressure [pressure] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set microwave-oven [microwave-oven] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set soymilk [soymilk] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set Ele-oven [Ele-oven] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set Terminal-water [Terminal-water] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set Kitchen-water-heat [Kitchen-water-heat] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set radiator-bag [radiator-bag] of one-of people with [hhd = hhd1 and relationship = 1]
+  ]
+  
+end
+
+
+to update-behavior 
+  ask people with [relationship != 1]
+  [
+    let hhd1 hhd
+    set Electric-Footbath [Electric-Footbath] of one-of people with [hhd = hhd1 and relationship = 1]
+         set Water-heater [Water-heater] of one-of people with [hhd = hhd1 and relationship = 1]   
+         set showerhead [showerhead] of one-of people with [hhd = hhd1 and relationship = 1]  
+         set thermostatic [thermostatic] of one-of people with [hhd = hhd1 and relationship = 1]   
+         set Faucet [Faucet] of one-of people with [hhd = hhd1 and relationship = 1]        
+         set Dishwasher [Dishwasher] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set sterilizer [sterilizer] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set sweeping-robot [sweeping-robot] of one-of people with [hhd = hhd1 and relationship = 1]   
+         set Electric-mop [Electric-mop] of one-of people with [hhd = hhd1 and relationship = 1]      
+         set Intelligent-Toilet [Intelligent-Toilet] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set Washing-machine [Washing-machine] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set Dry-or-sterilize [Dry-or-sterilize] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set pressure [pressure] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set microwave-oven [microwave-oven] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set soymilk [soymilk] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set Ele-oven [Ele-oven] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set Terminal-water [Terminal-water] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set Kitchen-water-heat [Kitchen-water-heat] of one-of people with [hhd = hhd1 and relationship = 1]    
+         set radiator-bag [radiator-bag] of one-of people with [hhd = hhd1 and relationship = 1]
+  ]
+  
+  ;step 1: output households attributes
+  let file-name "Water Energy Consumption/people water behavior.csv"
+  let filename "people water behavior.csv"
+  py:set "filename" filename
+  (py:run
+    "root_dir = os.getcwd()"
+    "for root, dirs, files in os.walk(root_dir):"
+    "  for file in files:"
+    "    if file == filename:"
+    "        file_path = os.path.join(root, file)"
+    "        os.remove(file_path)"
+   )
+  
+  file-open file-name
+  file-print "pid,gender,age,permonth_income,education,status,family_member,minor,retired,hhd_income,Water heater model,showerhead,thermostatic function,Faucettype,pressure pot,microwave oven,Electric crockpot orsoymilk maker orpie pan,Electric oven ortoaster orcoffee maker,Terminal water purifier,Kitchen water heater,sweeping robot,Electric mop,Washing machine model,Dryingorsterilizing"
+  ask people 
+  [
+    if income < 3000 [set income-group 1]
+    if income >= 3000 and income < 4500 [set income-group 2]
+    if income >= 4500 and income < 6000 [set income-group 3]
+    if income >= 6000 and income < 8000 [set income-group 4]
+    if income >= 8000 and income < 10000 [set income-group 5]
+    if income >= 10000 and income < 15000 [set income-group 6]
+    if income >= 15000 [set income-group 7]
+    let child count people with [hhd = [hhd] of myself and age <= 18]
+    let old count people with [hhd = [hhd] of myself and status = 4]
+    let water-heater-type 0
+        ifelse length Water-heater > 0 [set water-heater-type item 0 Water-heater][set water-heater-type 6]
+    let showerhead-type 0 
+        set showerhead-type item 0 showerhead       
+    let faucet-type 0
+        set faucet-type item 0 faucet
+    let pres 0  
+        if length pressure > 0 [set pres 1]
+    let micoven 0
+        if length microwave-oven > 0 [set micoven 1]
+    let sm 0
+        if length soymilk > 0 [set sm 1]
+    let eleoven 0
+        if length ele-oven > 0 [set eleoven 1]
+    let terminal 0
+        if length terminal-water > 0 [set terminal 1]
+    let kitchenwater 0
+        if length kitchen-water-heat > 0 [set kitchenwater 1]
+    let sweeprobot 0
+        if length sweeping-robot > 0 [set sweeprobot 1]
+    let mop 0
+        if length electric-mop > 0 [set mop 1]
+    let washmachine-type 0
+        ifelse length washing-machine > 0 [set washmachine-type item 0 washing-machine][set washmachine-type 4]
+    file-print (word pid","gender","age-group","income-group","education","status","number","child","old","hhd-income-group","water-heater-type","showerhead-type","thermostatic","faucet-type","pres","micoven","sm","eleoven","terminal","kitchenwater","sweeprobot","mop","washmachine-type","dry-or-sterilize)
+  ]
+  file-close
+
+  (py:run "subprocess.run(['python', 'Water Energy Consumption/predict_water_behavior.py'])")
+  
+  file-open "Water Energy Consumption/people water behavior.csv"
+  while [not file-at-end?]
+  [
+    let data csv:from-row file-read-line
+    if item 0 data != "pid"
+    [
+      let pid1 item 0 data
+      ask one-of people with [pid = pid1]
+     [  
+     ;water behavior
+     ;bathing-behavior
+     set bath-style item 24 data
+     set Adj-temp item 25 data
+     if length Water-heater > 0 [set Water-insulation item 26 data]
+     set Bath-fre-winter item 27 data
+     set Bath-fre-spring item 28 data
+     set Bath-fre-summer item 29 data
+     set Bath-time-winter item 30 data
+     set Bath-time-spring item 31 data
+     set Bath-time-summer item 32 data     
+     
+     if length Electric-Footbath > 0 
+     [ set footbath-fre-winter item 33 data
+       set footbath-fre-spring item 34 data
+       set footbath-fre-summer item 35 data]
+    
+  ;cooking-behaviors
+  set cook-fire-fre item 36 data
+  set Soup-fre item 37 data
+  if cook-fire-fre != 8 or Soup-fre != 8
+  [
+    set Cook-Energy item 38 data
+    set Gasstove-time item 39 data
+    set bread-machine-fre item 40 data
+    set ele-oven-fre item 41 data
+    set soymilk-fre item 42 data
+    set ele-stewpot-fre item 43 data
+    set induction-fre item 44 data
+    set gasstove-fre item 45 data
+    set pressure-fre item 46 data
+    set rice-fre item 47 data
+    set ele-pan-fre item 48 data
+    set sterilizer-fre item 49 data
+    set dishes-num item 50 data
+  ]
+  
+  ;cleaning-behaviors
+  if cook-fire-fre != 8 or Soup-fre != 8
+   [
+      set washes-avenum item 54 data
+      set wash-dish-method item 55 data  
+      set Wash-hotwater item 56 data      
+      ifelse wash-dish-method = 1 
+      [set wash-time item 57 data] 
+      [set wash-cycle item 58 data] 
+    ]
+      
+      set Clean-method item 51 data   
+      set Sweep-fre item 52 data 
+      set Mop-fre item 53 data  
+      set wash-method item 59 data 
+     (ifelse 
+      wash-method = 1 [
+      set handwash-fre-winter item 60 data
+      set handwash-fre-spring item 61 data
+      set handwash-fre-summer item 62 data
+      ]
+      wash-method = 2[
+      set washmachine-fre-winter item 63 data  
+      set washmachine-fre-spring item 64 data
+      set washmachine-fre-summer item 65 data
+      ]
+     [
+      set handwash-fre-winter item 60 data
+      set handwash-fre-spring item 61 data 
+      set handwash-fre-summer item 62 data 
+      set washmachine-fre-winter item 63 data  
+      set washmachine-fre-spring item 64 data
+      set washmachine-fre-summer item 65 data
+     ])
+    
+     if wash-method != 2 
+      [set Rinse-method item 66 data]   
+      
+     ifelse Rinse-method = 1 
+      [set laundry-time item 67 data]   
+      [set Num-clothes-rinsed item 68 data]    
+    
+     set hotwater-laundry item 69 data
+     set Dry-sterilize item 70 data  
+     
+     ;HVAC-behavior
+     set time-heatequipment-winter item 71 data 
+    ]
+   ]
+  ]
+  file-close
+  
+  print "update bahavior finished"
+end
+
+to house-mover
+  ;给搬了家的户主重新预测器具，只有housemover为2/3/4的需要重新预测大件电器，其余的电器不用重新预测买新的
+  ;step 1: output household's attributes
+  let file-name "Water Energy Consumption/people water appliances.csv"
+  let filename "people water appliances.csv"
+  py:set "filename" filename
+  (py:run
+    "root_dir = os.getcwd()"
+    "for root, dirs, files in os.walk(root_dir):"
+    "  for file in files:"
+    "    if file == filename:"
+    "        file_path = os.path.join(root, file)"
+    "        os.remove(file_path)"
+  )
+  file-open file-name
+  file-print "pid,gender,age,permonth_income,education,status,family_member,minor,retired,hhd_income"
+  ask people with [relationship = 1]
+  [
+    let gender1 0
+    ifelse gender = 0 [set gender1 2][set gender1 gender]
+    if hhd-income < 100000 [set hhd-income-group 1]
+    if hhd-income >= 100000 and hhd-income < 200000 [set hhd-income-group 2]
+    if hhd-income >= 200000 and hhd-income < 300000 [set hhd-income-group 3]
+    if hhd-income >= 300000 and hhd-income < 500000 [set hhd-income-group 4]
+    if hhd-income >= 500000 and hhd-income < 700000 [set hhd-income-group 5]
+    if hhd-income >= 700000 and hhd-income < 1000000 [set hhd-income-group 6]
+    if hhd-income >= 1000000 [set hhd-income-group 7]
+    
+    if income < 3000 [set income-group 1]
+    if income >= 3000 and income < 4500 [set income-group 2]
+    if income >= 4500 and income < 6000 [set income-group 3]
+    if income >= 6000 and income < 8000 [set income-group 4]
+    if income >= 8000 and income < 10000 [set income-group 5]
+    if income >= 10000 and income < 15000 [set income-group 6]
+    if income >= 15000 [set income-group 7]
+    let child count people with [hhd = [hhd] of myself and age <= 18]
+    let old count people with [hhd = [hhd] of myself and status = 4]
+    file-print (word pid","gender1","age-group","income-group","education","status","number","child","old","hhd-income-group)
+  ]
+  file-close
+  
+  (py:run "subprocess.run(['python', 'Water Energy Consumption/predict_water_appliances.py'])")
+  
+  file-open "Water Energy Consumption/people water appliances.csv"
+  while [not file-at-end?]
+  [
+    let data csv:from-row file-read-line
+    if item 0 data != "pid"
+    [
+      let pid1 item 0 data
+      ask one-of people with [pid = pid1 and relationship = 1]
+      [
+        if housemover > 1 [
+      ;bathing-appliances
+      let type-Water-heater-needed item 11 data 
+        if type-Water-heater-needed = 1 [set Water-heater (list 1 6 0)]
+        if type-Water-heater-needed = 2 [set Water-heater (list 2 6 0)]
+        if type-Water-heater-needed = 3 [set Water-heater (list 3 8 0)]
+        if type-Water-heater-needed = 4 [set Water-heater (list 4 15 0)]
+        if type-Water-heater-needed = 5 [set Water-heater (list 5 15 0)]
+        if type-Water-heater-needed = 6 [set Water-heater []]
+        if type-Water-heater-needed = 7 [set Water-heater (list 7 6 0)]      
+      let num-showerhead-needed item 12 data 
+        if num-showerhead-needed = 1 [set showerhead (list 1 10 0)]
+        if num-showerhead-needed = 2 [set showerhead (list 2 10 0)]
+        if num-showerhead-needed = 3 [set showerhead (list 3 10 0)]    
+      set thermostatic item 13 data
+      let num-Faucet-needed item 14 data 
+        if num-Faucet-needed = 1 [set Faucet (list 1 5 0)]
+        if num-Faucet-needed = 2 [set Faucet (list 2 5 0)]
+        if num-Faucet-needed = 3 [set Faucet (list 3 5 0)]      
+      
+      ;cleaning-appliances
+      let num-Intelligent-Toilet-needed item 19 data 
+        if num-Intelligent-Toilet-needed = 1 [set Intelligent-Toilet (list 10 0)]
+      let num-Washing-machine-needed item 20 data 
+        if num-Washing-machine-needed = 1 [set Washing-machine (list 1 10 0)]
+        if num-Washing-machine-needed = 2 [set Washing-machine (list 2 10 0)]
+        if num-Washing-machine-needed = 3 [set Washing-machine (list 3 8 0)]
+        if num-Washing-machine-needed = 4 [set Washing-machine []]     
+      if length Washing-machine > 0 [set Dry-or-sterilize item 21 data]
+    
+      ;cooking-appliances
+      let num-Terminal-water-needed item 26 data 
+        if num-Terminal-water-needed = 1 [set Terminal-water (list 5 0)]
+      let num-Kitchen-water-heat-needed item 27 data 
+        if num-Kitchen-water-heat-needed = 1 [set Kitchen-water-heat (list 8 0)]   
+        ]
+      ]
+    ]
+  ] 
+  file-close
+  
+  print "housemover finished"
+end
+
+to update-appliance 
+  let data 0 
+  ;step 1: output household's attributes
+  let file-name "Water Energy Consumption/people water appliances.csv"
+  let filename "people water appliances.csv"
+  py:set "filename" filename
+  (py:run
+    "root_dir = os.getcwd()"
+    "for root, dirs, files in os.walk(root_dir):"
+    "  for file in files:"
+    "    if file == filename:"
+    "        file_path = os.path.join(root, file)"
+    "        os.remove(file_path)"
+  )
+  file-open file-name
+  file-print "pid,gender,age,permonth_income,education,status,family_member,minor,retired,hhd_income"
+  ask people with [relationship = 1]
+  [
+    let gender1 0
+    ifelse gender = 0 [set gender1 2][set gender1 gender]
+    if hhd-income < 100000 [set hhd-income-group 1]
+    if hhd-income >= 100000 and hhd-income < 200000 [set hhd-income-group 2]
+    if hhd-income >= 200000 and hhd-income < 300000 [set hhd-income-group 3]
+    if hhd-income >= 300000 and hhd-income < 500000 [set hhd-income-group 4]
+    if hhd-income >= 500000 and hhd-income < 700000 [set hhd-income-group 5]
+    if hhd-income >= 700000 and hhd-income < 1000000 [set hhd-income-group 6]
+    if hhd-income >= 1000000 [set hhd-income-group 7]
+    
+    if income < 3000 [set income-group 1]
+    if income >= 3000 and income < 4500 [set income-group 2]
+    if income >= 4500 and income < 6000 [set income-group 3]
+    if income >= 6000 and income < 8000 [set income-group 4]
+    if income >= 8000 and income < 10000 [set income-group 5]
+    if income >= 10000 and income < 15000 [set income-group 6]
+    if income >= 15000 [set income-group 7]
+    let child count people with [hhd = [hhd] of myself and age <= 18]
+    let old count people with [hhd = [hhd] of myself and status = 4]
+    file-print (word pid","gender1","age-group","income-group","education","status","number","child","old","hhd-income-group)
+  ]
+  file-close
+  
+  (py:run "subprocess.run(['python', 'Water Energy Consumption/predict_water_appliances.py'])")
+  
+  file-open "Water Energy Consumption/people water appliances.csv"
+  while [not file-at-end?]
+  [
+    set data csv:from-row file-read-line
+  ] 
+    file-close
+  
+   if item 0 data != "pid"
+  [   let pid1 item 0 data
+          
+   ask one-of people with [pid = pid1 and relationship = 1]
+    [
+    ;bathing-appliances
+    ;电动足浴盆
+    if length Electric-Footbath > 0
+      [
+        let lifespan1 item 0 Electric-Footbath  
+        let age1 item 1 Electric-Footbath
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let num-Electric-Footbath-needed item 10 data
+          ifelse num-Electric-Footbath-needed = 1 [set Electric-Footbath replace-item 1 Electric-Footbath 0][set Electric-Footbath []]
+        ]
+        [set Electric-Footbath replace-item 1 Electric-Footbath age1]
+      ]
+    if length Electric-Footbath = 0 
+        [
+          let num-Electric-Footbath-needed item 10 data
+          ifelse num-Electric-Footbath-needed = 1 [set Electric-Footbath (list 6 0)][set Electric-Footbath []]
+        ]
+    
+    ask people with [housemover = 0 or housemover = 1][
+    ;热水器型号
+    if length Water-heater > 0
+      [
+        let lifespan1 item 1 Water-heater  
+        let age1 item 2 Water-heater
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let type-Water-heater-needed item 11 data 
+          if type-Water-heater-needed = 1 [set Water-heater (list 1 6 0)]
+          if type-Water-heater-needed = 2 [set Water-heater (list 2 6 0)]
+          if type-Water-heater-needed = 3 [set Water-heater (list 3 8 0)]
+          if type-Water-heater-needed = 4 [set Water-heater (list 4 15 0)]
+          if type-Water-heater-needed = 5 [set Water-heater (list 5 15 0)]
+          if type-Water-heater-needed = 6 [set Water-heater []]
+          if type-Water-heater-needed = 7 [set Water-heater (list 7 6 0)]     
+        ]
+        [set Water-heater replace-item 2 Water-heater age1]
+      ]
+    ;淋浴喷头
+    if length showerhead > 0
+      [
+        let lifespan1 item 1 showerhead  
+        let age1 item 2 showerhead
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let num-showerhead-needed item 12 data
+              if num-showerhead-needed = 1 [set showerhead (list 1 10 0)]
+              if num-showerhead-needed = 2 [set showerhead (list 2 10 0)]
+              if num-showerhead-needed = 3 [set showerhead (list 3 10 0)]          
+          set thermostatic item 13 data ;淋浴喷头是否有恒温功能,更换淋浴喷头的时候才会重新预测
+        ]
+        [set showerhead replace-item 2 showerhead age1]
+      ]
+          
+    ;水龙头出水类型
+    if length Faucet > 0
+      [
+        let lifespan1 item 1 Faucet  
+        let age1 item 2 Faucet
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let num-Faucet-needed item 14 data
+              if num-Faucet-needed = 1 [set Faucet (list 1 5 0)]
+              if num-Faucet-needed = 2 [set Faucet (list 2 5 0)]
+              if num-Faucet-needed = 3 [set Faucet (list 3 5 0)]  
+        ]
+        [set Faucet replace-item 2 Faucet age1]
+      ]  
+    ]
+      
+    ;cleaning-appliances
+    ;洗碗机
+    if length Dishwasher > 0
+      [
+        let lifespan1 item 0 Dishwasher  
+        let age1 item 1 Dishwasher
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let num-Dishwasher-needed item 15 data
+          ifelse num-Dishwasher-needed = 1 [set Dishwasher replace-item 1 Dishwasher 0][set Dishwasher []]
+        ]
+        [set Dishwasher replace-item 1 Dishwasher age1]
+      ]
+     if length Dishwasher = 0
+        [
+          let num-Dishwasher-needed item 15 data
+          ifelse num-Dishwasher-needed = 1 [set Dishwasher (list 10 0)][set Dishwasher []]
+        ]
+        
+    ;sterilizer消毒柜
+    if length sterilizer > 0
+      [
+        let lifespan1 item 0 sterilizer  
+        let age1 item 1 sterilizer
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let num-sterilizer-needed item 16 data
+          ifelse num-sterilizer-needed = 1 [set sterilizer replace-item 1 sterilizer 0][set sterilizer []]
+        ]
+        [set sterilizer replace-item 1 sterilizer age1]
+      ] 
+     if length sterilizer = 0
+        [
+          let num-sterilizer-needed item 16 data
+          ifelse num-sterilizer-needed = 1 [set sterilizer (list 8 0)][set sterilizer []]
+        ]
+        
+    ;sweeping-robot吸尘器或扫地机器人
+    if length sweeping-robot > 0
+      [
+        let lifespan1 item 0 sweeping-robot  
+        let age1 item 1 sweeping-robot
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let num-sweeping-robot-needed item 17 data
+          ifelse num-sweeping-robot-needed = 1 [set sweeping-robot replace-item 1 sweeping-robot 0][set sweeping-robot []]
+        ]
+        [set sweeping-robot replace-item 1 sweeping-robot age1]
+      ] 
+     if length sweeping-robot = 0
+        [
+          let num-sweeping-robot-needed item 17 data
+          ifelse num-sweeping-robot-needed = 1 [set sweeping-robot (list 10 0)][set sweeping-robot []]
+        ]
+        
+    ;Electric-mop电动拖把或蒸汽拖把
+    if length Electric-mop > 0
+      [
+        let lifespan1 item 0 Electric-mop  
+        let age1 item 1 Electric-mop
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let num-Electric-mop-needed item 18 data
+          ifelse num-Electric-mop-needed = 1 [set Electric-mop replace-item 1 Electric-mop 0][set Electric-mop []]
+        ]
+        [set Electric-mop replace-item 1 Electric-mop age1]
+      ] 
+     if length Electric-mop = 0
+        [
+          let num-Electric-mop-needed item 18 data
+          ifelse num-Electric-mop-needed = 1 [set Electric-mop (list 10 0)][set Electric-mop []]
+        ]
+      
+    ask people with [housemover = 0 or housemover = 1][
+    ;Intelligent-Toilet智能马桶
+    if length Intelligent-Toilet > 0
+      [
+        let lifespan1 item 0 Intelligent-Toilet  
+        let age1 item 1 Intelligent-Toilet
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let num-Intelligent-Toilet-needed item 19 data
+          ifelse num-Intelligent-Toilet-needed = 1 [set Intelligent-Toilet replace-item 1 Intelligent-Toilet 0][set Intelligent-Toilet []]
+        ]
+        [set Intelligent-Toilet replace-item 1 Intelligent-Toilet age1]
+      ] 
+    ;Washing-machine洗衣机类型
+    if length Washing-machine > 0
+      [
+        let lifespan1 item 1 Washing-machine  
+        let age1 item 2 Washing-machine
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let num-Washing-machine-needed item 20 data
+          if num-Washing-machine-needed = 1 [set Washing-machine (list 1 10 0)]
+          if num-Washing-machine-needed = 2 [set Washing-machine (list 2 10 0)]
+          if num-Washing-machine-needed = 3 [set Washing-machine (list 3 8 0)]
+          if num-Washing-machine-needed = 4 [set Washing-machine []]
+             ;Dry-or-sterilize洗衣机是否有烘干或者消毒功能
+             if length Washing-machine > 0 [set Dry-or-sterilize item 21 data]
+        ]
+        [set Washing-machine replace-item 2 Washing-machine age1]
+      ] 
+    ]
+      
+    ;cooking-appliances
+    ;pressure高压力锅或电压力锅
+    if length pressure > 0
+      [
+        let lifespan1 item 0 pressure  
+        let age1 item 1 pressure
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let num-pressure-needed item 22 data
+          ifelse num-pressure-needed = 1 [set pressure replace-item 1 pressure 0][set pressure []]
+        ]
+        [set pressure replace-item 1 pressure age1]
+      ]
+     if length pressure = 0
+        [
+          let num-pressure-needed item 22 data
+          ifelse num-pressure-needed = 1 [set pressure (list 8 0)][set pressure []]
+        ]
+        
+    ;microwave-oven电磁炉或微波炉    
+    if length microwave-oven > 0
+      [
+        let lifespan1 item 0 microwave-oven  
+        let age1 item 1 microwave-oven
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let num-microwave-oven-needed item 23 data
+          ifelse num-microwave-oven-needed = 1 [set microwave-oven replace-item 1 microwave-oven 0][set microwave-oven []]
+        ]
+        [set microwave-oven replace-item 1 microwave-oven age1]
+      ]
+    if length microwave-oven = 0
+        [
+          let num-microwave-oven-needed item 23 data
+          ifelse num-microwave-oven-needed = 1 [set microwave-oven (list 10 0)][set microwave-oven []]
+        ]
+        
+    ;soymilk电炖锅或豆浆机或电饼铛 
+    if length soymilk > 0
+      [
+        let lifespan1 item 0 soymilk  
+        let age1 item 1 soymilk
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let num-soymilk-needed item 24 data
+          ifelse num-soymilk-needed = 1 [set soymilk replace-item 1 soymilk 0][set soymilk []]
+        ]
+        [set soymilk replace-item 1 soymilk age1]
+      ]  
+     if length soymilk = 0
+        [
+          let num-soymilk-needed item 24 data
+          ifelse num-soymilk-needed = 1 [set soymilk (list 6 0)][set soymilk []]
+        ]
+        
+    ;Ele-oven电烤箱或面包机或咖啡机   
+    if length Ele-oven > 0
+      [
+        let lifespan1 item 0 Ele-oven  
+        let age1 item 1 Ele-oven
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let num-Ele-oven-needed item 25 data
+          ifelse num-Ele-oven-needed = 1 [set Ele-oven replace-item 1 Ele-oven 0][set Ele-oven []]
+        ]
+        [set Ele-oven replace-item 1 Ele-oven age1]
+      ]
+     if length Ele-oven = 0
+        [
+          let num-Ele-oven-needed item 25 data
+          ifelse num-Ele-oven-needed = 1 [set Ele-oven (list 6 0)][set Ele-oven []]
+        ]
+      
+    ask people with [housemover = 0 or housemover = 1][
+    ;Terminal-water终端净水器   
+    if length Terminal-water > 0
+      [
+        let lifespan1 item 0 Terminal-water  
+        let age1 item 1 Terminal-water
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let num-Terminal-water-needed item 26 data
+          ifelse num-Terminal-water-needed = 1 [set Terminal-water replace-item 1 Terminal-water 0][set Terminal-water []]
+        ]
+        [set Terminal-water replace-item 1 Terminal-water age1]
+      ] 
+    ;Kitchen-water-heat厨房用热水器  
+    if length Kitchen-water-heat > 0
+      [
+        let lifespan1 item 0 Kitchen-water-heat  
+        let age1 item 1 Kitchen-water-heat
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let num-Kitchen-water-heat-needed item 27 data
+          ifelse num-Kitchen-water-heat-needed = 1 [set Kitchen-water-heat replace-item 1 Kitchen-water-heat 0][set Kitchen-water-heat []]
+        ]
+        [set Kitchen-water-heat replace-item 1 Kitchen-water-heat age1]
+      ]  
+     ] 
+
+    ;HVAC-appliances
+    ;radiator-bag 电暖水袋、暖水袋
+    if length radiator-bag > 0
+      [
+        let lifespan1 item 0 radiator-bag  
+        let age1 item 1 radiator-bag
+        set age1 age1 + 1
+        ifelse age1 >= lifespan1
+        [
+          let num-radiator-bag-needed item 28 data
+          ifelse num-radiator-bag-needed = 1 [set radiator-bag replace-item 1 radiator-bag 0][set radiator-bag []]
+        ]
+        [set radiator-bag replace-item 1 radiator-bag age1]
+      ] 
+     if length radiator-bag = 0  
+        [
+          let num-radiator-bag-needed item 28 data
+          ifelse num-radiator-bag-needed = 1 [set radiator-bag (list 2 0)][set radiator-bag []]
+        ]
+     ]
+  ]
+    print "update appliances finished"
+end
+
+to-report predict-infrastructures
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_excel('Water Energy Consumption/infrastructures.xlsx')"
+    "features = name1_data[['gender', 'age', 'permonth_income', 'education', 'status','family_member', 'minor', 'retired','hhd_income']]"
+    "second_level_labels = name1_data[['drinking_water','hotwater','piped natural gas','winterheat','summercool']]"
+    "rf_second_level = RandomForestClassifier(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"
+    "drinkingwater = Y[0, 0]"
+    "hotwater = Y[0, 1]"
+    "drinkingwater = Y[0, 2]"
+    "piped natural gas = Y[0, 3]"
+    "summercool = Y[0, 4]"
+  )
+  let drinkingwater1 py:runresult "drinkingwater"       
+  let hotwater1 py:runresult "hotwater"            
+  let piped-natural-gas1 py:runresult "piped natural gas"  
+  let winterheat1 py:runresult "winterheat"         
+  let summercool1 py:runresult "summercool" 
+  let resultlist (list drinkingwater1 hotwater1 piped-natural-gas1 winterheat1 summercool1)
+  report resultlist
+end

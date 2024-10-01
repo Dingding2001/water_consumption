@@ -9,7 +9,6 @@ OBs-own
   attractiveness ;attractiveness of office building
   frent-max ;The maximum value that rent can rise to
   frent-min ;The minimum value that rent can fall to
-  district
 ]
 
 ;cfrents are used to record the utility of candidate office building
@@ -42,11 +41,11 @@ firms-own
   location-choice ;Should the company move to another office building
   Long  ;longitude
   Lat  ;latitude
-  district
   UMove ;Utility of move to another office building. If Umove greater than a threshold, the firm will move. 
 ]
 
 to firm-model
+  print "start firm model"
   ask firms
   [
     if count in-employee-neighbors = 0 [die]
@@ -72,15 +71,19 @@ to firm-model
     set frent-min frent - frent * T-OB-decrease
     set capacity initial-capacity - sum [office-size] of in-rent-neighbors
   ]
-  
+ 
   
   firm-birth
+  print "firm birth finished"
   
   firm-growth-closure
+  print "firm growth closure"
   
   firm-move
-  ask firms [set office-cost-next [frent] of one-of in-rent-neighbors * office-size]
-  ask firms [set district [pdistrict] of patch-here]
+  print "firm move"
+  
+  develop-new-ob
+  print "develop new ob"
   
   print "firm-model finished"
 end
@@ -103,6 +106,9 @@ to firm-growth-closure
       capacity < capacity-lower [set capacity capacity-lower]
       [set capacity capacity]
     )
+    
+    ask firms [set capacity round (capacity / sum [capacity] of firms * sum [count in-employee-neighbors] of firms)]
+    
     ;Check if capacity is below the threshold for closure
     ifelse capacity < capacity-closure [set closure closure + 1][set closure 0]
   ]
@@ -121,11 +127,6 @@ to firm-growth-closure
       set capacity capacity + [office-size] of myself
     ]
     die
-  ]
-  
-  ask firms
-  [
-    set capacity round ((capacity / sum [capacity] of firms) * sum [count in-employee-neighbors] of firms)
   ]
 end
 
@@ -197,9 +198,6 @@ to firm-move
     ;if the utility of move is greater than the threshold of move, the firm will move to another office building in this simulation year,
     if Umove > T-firm-move [set location-choice 1]
   ]
-  print (word "mean Umove:" mean [umove] of firms)
-  
-  print (word "number of firms move:" count firms with [location-choice = 1])
   
   ;mock negotiation
   let i 1 
@@ -236,8 +234,8 @@ to firm-move
     ;Office buildings update attractiveness and rents
     let T-lower 0.5 ;The variable determines a lower limit. If office buildings' attractiveness is lower than the lower limit, they will reduce the rent.
     let T-upper 1 ;The variable determines a upper limit. If office buildings' attractiveness is greater than the lower limit, they will reduce the rent.
-    let R-increase 0.015 ;increase rate
-    let R-decrease -0.01 ;decrease rate
+    let R-increase 0.1 ;increase rate
+    let R-decrease -0.1 ;decrease rate
 
     ask OBs [set attractiveness 0]
     ask OBs with [capacity > 0]
@@ -306,7 +304,7 @@ to firm-move
         set wslong [long] of myself
         set wslat [lat] of myself
         set current-ws-dis distance myself
-        ask one-of people with [hhd = [hhd] of myself and relationship = 1][set flexible flexible + 1 set work work + 1]
+        ask one-of people with [hhd = [hhd] of myself and relationship = 1][set flexible flexible + 1]
       ]
     ]
   ]
@@ -337,7 +335,7 @@ to firm-move
       set wslong [long] of myself
       set wslat [lat] of myself
       set current-ws-dis distance myself
-      ask one-of people with [hhd = [hhd] of myself and relationship = 1][set flexible flexible + 1 set work work + 1]
+      ask one-of people with [hhd = [hhd] of myself and relationship = 1][set flexible flexible + 1]
     ]
   ]
 end
@@ -348,9 +346,9 @@ to develop-new-OB
   ask patches with [pdistrict != 0 and count turtles-here = 0]
   [
     let my-neighbors neighbors with [pdistrict != 0]
-    if my-neighbors != nobody
+    if count my-neighbors != 0
     [
-      set dem-ob sum [frent] of residences-on my-neighbors / count my-neighbors
+      set dem-ob sum [frent] of OBs-on my-neighbors / count my-neighbors
     ]
   ]
   
@@ -368,7 +366,7 @@ to develop-new-OB
     move-to one-of patches with [pcolor = blue]
     ask patch-here [set pcolor 0]
     set frent mean [frent] of min-n-of 10 obs [distance myself]
-    set size 0.5 set color green set shape "blue"
+    set size 0.5 set color green set shape "house"
   ]
   
   ;Calculate longitude and latitude based on netlogo coordinates

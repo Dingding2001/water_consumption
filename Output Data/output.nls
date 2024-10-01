@@ -114,7 +114,7 @@ to output-data
   )
   file-open file-name-OBs
   file-print "OBs-ID,x-coordinate,y-coordinate,ob-price,capacity"
-
+  
   ask OBs [
     file-print (word OID ", " long  ", " lat ", " frent ", "capacity )
   ]
@@ -139,48 +139,106 @@ to output-data
   ]
   file-close
   
-  ;output energy consumption
-  if year >= 2021
+  ;dailyplan-weekday
+  let file-name-dailyplan-weekday (word "Output Data/Annualoutput/weekday" year "year.csv")
+  let filename-dailyplan-weekday (Word "weekday" year "year.csv")
+  py:set "filename" filename-dailyplan-weekday
+ (py:run
+    "root_dir = os.getcwd()"
+    "for root, dirs, files in os.walk(root_dir):"
+   "  for file in files:"
+    "    if file == filename:"
+    "        file_path = os.path.join(root, file)"
+    "        os.remove(file_path)"
+  )
+  file-open file-name-dailyplan-weekday
+  file-print "people-ID,x-coordinate,y-coordinate,firstbath-happen,firstbath-period,secondbath-happen,secondbath-period,breakfast-happen,breakfast-period,lunch-happen,lunch-period,dinner-happen,dinner-period,washclothes-happen,washclothes-period,clean-happen,clean-period,footbath-happen,footbath-period"
+  ask people 
   [
-    let file-name-energy (word "Output Data/Annualoutput/Energy" year "year.csv")
-    file-open file-name-energy
-    let filename-energy (Word "Energy" year "year.csv")
-    py:set "filename" filename-energy
-    (py:run
-      "root_dir = os.getcwd()"
-      "for root, dirs, files in os.walk(root_dir):"
-      "  for file in files:"
-      "    if file == filename:"
-      "        file_path = os.path.join(root, file)"
-      "        os.remove(file_path)"
-    )
-    file-print "hhd,district,energy,x-coordinate,y-coordinate"
-    ask people with [relationship = 1] 
-    [
-      file-print (word hhd ", " district ", " electricity "," livelong  ", " livelat )
-    ]
-    file-close
+    file-print (word who","livelong","livelat","item 0 firstbath-1","item 1 firstbath-1","item 0 secondbath-1","item 1 secondbath-1","item 0 breakfast-1","item 1 breakfast-1","item 0 lunch-1","item 1 lunch-1","item 0 dinner-1","item 1 dinner-1","item 0 washclothes-1","item 1 washclothes-1","item 0 clean-1","item 1 clean-1","item 0 footbath-1","item 1 footbath-1)
   ]
+  file-close
+  
+  ;dailyplan-weekend
+  let file-name-dailyplan-weekend (word "Output Data/Annualoutput/weekend" year "year.csv")
+  let filename-dailyplan-weekend (Word "weekend" year "year.csv")
+  py:set "filename" filename-dailyplan-weekend
+  (py:run
+    "root_dir = os.getcwd()"
+    "for root, dirs, files in os.walk(root_dir):"
+    "  for file in files:"
+    "    if file == filename:"
+    "        file_path = os.path.join(root, file)"
+    "        os.remove(file_path)"
+  )
+  file-open file-name-dailyplan-weekend
+  file-print "people-ID,x-coordinate,y-coordinate,firstbath-happen,firstbath-period,secondbath-happen,secondbath-period,breakfast-happen,breakfast-period,lunch-happen,lunch-period,dinner-happen,dinner-period,washclothes-happen,washclothes-period,clean-happen,clean-period,footbath-happen,footbath-period"
+  ask people 
+  [
+    file-print (word who","livelong","livelat","item 0 firstbath-2","item 1 firstbath-2","item 0 secondbath-2","item 1 secondbath-2","item 0 breakfast-2","item 1 breakfast-2","item 0 lunch-2","item 1 lunch-2","item 0 dinner-2","item 1 dinner-2","item 0 washclothes-2","item 1 washclothes-2","item 0 clean-2","item 1 clean-2","item 0 footbath-2","item 1 footbath-2)
+  ]
+  file-close
+  
+  ;water-consumption-people
+  let file-name-water-consumption (word "Output Data/Annualoutput/water-consumption-people" year "year.csv")
+  let filename-water-consumption (Word "water-consumption-people" year "year.csv")
+  py:set "filename" filename-water-consumption
+  (py:run
+    "root_dir = os.getcwd()"
+    "for root, dirs, files in os.walk(root_dir):"
+    "  for file in files:"
+    "    if file == filename:"
+    "        file_path = os.path.join(root, file)"
+    "        os.remove(file_path)"
+  )
+  file-open file-name-water-consumption
+  file-print "people-ID,x-coordinate,y-coordinate,winter-consume,spring-consume,summer-consume,year-consume,winter-fee,spring-fee,summer-fee,year-fee"
+  ask people 
+  [
+    file-print (word pid","livelong","livelat","winter-consume","spring-consume","summer-consume","year-consume","winter-fee","spring-fee","summer-fee","year-fee)
+  ]
+  file-close
+  
+  ;water-consumption-family
+  let file-name-water-family (word "Output Data/Annualoutput/water-consumption-family" year "year.csv")
+  let filename-water-family (Word "water-consumption-family" year "year.csv")
+  py:set "filename" filename-water-family
+  (py:run
+    "root_dir = os.getcwd()"
+    "for root, dirs, files in os.walk(root_dir):"
+    "  for file in files:"
+    "    if file == filename:"
+    "        file_path = os.path.join(root, file)"
+    "        os.remove(file_path)"
+  )
+  file-open file-name-water-family
+  file-print "hhd,x-coordinate,y-coordinate,family-water-winter,family-water-spring,family-water-summer,family-water-year,family-winter-fee,family-spring-fee,family-summer-fee,family-year-fee"
+  ask people with [relationship = 1]
+  [
+    file-print (word hhd","livelong","livelat","family-water-winter","family-water-spring","family-water-summer","family-water-year","family-winter-fee","family-spring-fee","family-summer-fee","family-year-fee)
+  ]
+  file-close
+  
+  let file-name-inhome (word "Output Data/Annualoutput/inhome-time" year "year.csv")
+  let filename-inhome (Word "inhome-time" year "year.csv")
+  py:set "filename" filename-inhome
+  (py:run
+    "root_dir = os.getcwd()"
+    "for root, dirs, files in os.walk(root_dir):"
+    "  for file in files:"
+    "    if file == filename:"
+    "        file_path = os.path.join(root, file)"
+    "        os.remove(file_path)"
+  )
+  file-open file-name-inhome
+  file-print "people-ID,x-coordinate,y-coordinate,weekday-inhome-time,weekend-inhome-time,dailyplan-water"
+  ask people
+  [
+    let weekday-inhome-time (1440 - (weekday-endtime - weekday-deptime))
+    let weekend-inhome-time (1440 - (weekend-endtime - weekend-deptime))
+    file-print (word pid","livelong ","livelat","weekday-inhome-time","weekend-inhome-time","dailyplan-water)
+  ]
+  file-close
+  
+  print "output finished"
 end
-
-
-TO OUTPUT-LED
-  let file-name-LED (word "Output Data/Annualoutput/EnergyBEV" year "year.csv")
-    file-open file-name-LED
-    let filename-LED (Word "EnergyBEV" year "year.csv")
-    py:set "filename" filename-LED
-    (py:run
-      "root_dir = os.getcwd()"
-      "for root, dirs, files in os.walk(root_dir):"
-      "  for file in files:"
-      "    if file == filename:"
-      "        file_path = os.path.join(root, file)"
-      "        os.remove(file_path)"
-    )
-    file-print "hhd,district,x-coordinate,y-coordinate"
-    ask people with [relationship = 1 and item 0 LED != 1]
-    [
-      file-print (word hhd ", " district ", " livelong  ", " livelat)
-    ]
-    file-close
-END
