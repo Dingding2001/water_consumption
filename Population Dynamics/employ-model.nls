@@ -1,0 +1,80 @@
+to employ-model
+  ;退休
+  ask people with [(status = 3 or status = 2) and ((gender = 0 and age >= 55) or (gender = 1 and age >= 60))]
+  [
+    set status 4
+    set income income / 3
+    set wslong 0
+    set wslat 0
+    ask people with [hhd = [hhd] of myself and relationship = 0] [set flexible flexible + 1]
+    ask my-employees [die]
+    ask my-shoppings with [loc = 1][die]
+    ask my-leisures with [loc = 1][die]
+  ]
+  
+  ;定义失业率
+  let umemployment 0.05
+  
+  ;根据失业率选择一部分人失业和就业
+  ask people with [status = 3 or status = 2]
+  [
+    ifelse random-float 1 <= umemployment
+    [
+      if status = 2 [ask one-of people with [hhd = [hhd] of myself and relationship = 1][set flexible flexible + 1]] ;原本有工作的人失业，flexible trigger + 1
+      set status 3 ;将状态变为失业
+    ]
+    [set status 2]
+  ]
+  
+  ;失业
+  ask people with [status = 3]
+  [
+    ask my-employees [die]
+    set income 0
+    set wslong 0
+    set wslat 0
+    set current-ws-dis 0
+    ask people with [hhd = [hhd] of myself] [set hhd-income sum [income] of people with [hhd = [hhd] of myself]]
+    ask my-shoppings with [loc = 1][die]
+    ask my-leisures with [loc = 1][die]
+  ]
+
+
+  ;就业
+  
+  ;部分企业/学校/商店因为所需人数变动，一部分职工需要更变工作地（即：部分人需要换工作，但是status不变）
+  ask schools with [count in-employee-neighbors > staff]
+  [
+    ask n-of (count in-employee-neighbors - staff) in-employee-neighbors [ask my-employees [die] ]
+  ]
+  ask shops with [count in-employee-neighbors > staff]
+  [
+    ask n-of (count in-employee-neighbors - staff) in-employee-neighbors [ask my-employees [die] ]
+  ]
+  ;更新每个企业的所需人数
+  let firm-staff count people with [status = 2] - sum [staff] of schools - sum [staff] of shops
+  ask firms [set staff round  firm-staff * capacity / sum [capacity] of firms]
+  if sum [staff] of firms > firm-staff [ask n-of (sum [staff] of firms - firm-staff) firms with [staff > 1] [set staff staff - 1]]
+  if sum [staff] of firms < firm-staff [ask n-of (firm-staff - sum [staff] of firms) firms[set staff staff + 1]]
+  ;若现有员工的数量超过实际应有的数量
+  ask firms with [count in-employee-neighbors > staff]
+  [
+    ask n-of (count in-employee-neighbors - staff) in-employee-neighbors [ask my-employees [die] ]
+  ]
+  
+  ask people with [status = 2 and count in-employee-neighbors = 0]
+  [
+    let candidate one-of schools with [count in-employee-neighbors < staff] in-radius distance-max
+    if candidate = nobody [set candidate one-of shops with [count in-employee-neighbors < staff] in-radius distance-max]
+    if candidate = nobody [set candidate one-of firms with [count in-employee-neighbors < staff] in-radius distance-max]
+    if candidate = nobody [set candidate one-of schools with [count in-employee-neighbors < staff]]
+    if candidate = nobody [set candidate one-of shops with [count in-employee-neighbors < staff]]
+    if candidate = nobody [set candidate one-of firms with [count in-employee-neighbors < staff]]
+    create-employee-with candidate
+    set wslong [long] of candidate
+    set wslat [lat] of candidate
+    ask one-of people with [hhd = [hhd] of myself and relationship = 1][set flexible flexible + 1]
+  ]
+  
+  print "employ-model finished"
+end

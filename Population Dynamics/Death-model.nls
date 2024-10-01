@@ -1,0 +1,436 @@
+to death-model
+  ;54岁及以下的人的平均死亡率为0.97‰
+  ;55~79岁的人的平均死亡率为12.47‰
+  ;80~89岁的人的平均死亡率为71.75‰
+  ;90岁以上的人的平均死亡率为149.87‰
+  let num-death1 count people with [age <= 54] * 0.97 / 1000
+  let i 1
+  while [i <= num-death1]
+  [
+    set i i + 1
+    let target one-of people with [age <= 54]
+    ask target
+    [
+      if (relationship = 1 and count people with [hhd = [hhd] of myself] >= 2) ;如果死亡的人为户主，且家庭中超过2人
+      [
+        let hhd1 hhd
+        set relationship 0
+        ifelse (count other people with [hhd = hhd1 and age >= 18] > 0)
+        [ask one-of other people with [hhd = hhd1 and age >= 18] [set relationship 1]]
+        [ask one-of other people with [hhd = hhd1][set relationship 1]]
+        let hhder one-of people with [hhd = hhd1 and relationship = 1]
+        ask hhder 
+        [
+          update-relationship hhd1 hhder
+          set mandatory [mandatory] of target
+          set flexible [flexible] of target + 1
+          set residence-cost [residence-cost] of target
+          set residence-size [residence-size] of target
+          set drinkingwater [drinkingwater] of target      
+          set hotwater [hotwater] of target 
+          set piped-natural-gas [piped-natural-gas] of target 
+          set winterheat [winterheat] of target 
+          set summercool [summercool] of target          
+          set Electric-Footbath [Electric-Footbath] of target 
+          set Water-heater [Water-heater] of target 
+          set showerhead [showerhead] of target 
+          set thermostatic [thermostatic] of target 
+          set Faucet [Faucet] of target 
+          set Dishwasher [Dishwasher] of target 
+          set sterilizer [sterilizer] of target 
+          set sweeping-robot [sweeping-robot] of target 
+          set Electric-mop [Electric-mop] of target 
+          set Intelligent-Toilet [Intelligent-Toilet] of target 
+          set Washing-machine [Washing-machine] of target
+          set Dry-or-sterilize [Dry-or-sterilize] of target
+          set pressure [pressure] of target    
+          set microwave-oven [microwave-oven] of target  
+          set soymilk [soymilk] of target   
+          set Ele-oven [Ele-oven] of target
+          set Terminal-water [Terminal-water] of target
+          set Kitchen-water-heat [Kitchen-water-heat] of target
+          set radiator-bag [radiator-bag] of target
+          set bath-style [bath-style] of target
+          set Bath-fre-winter  [Bath-fre-winter] of target
+          set Bath-fre-spring [Bath-fre-spring] of target
+          set Bath-fre-summer  [Bath-fre-summer] of target
+          set Bath-time-winter [Bath-time-winter] of target
+          set Bath-time-spring [Bath-time-spring] of target
+          set Bath-time-summer [Bath-time-summer] of target
+          set Adj-temp [Adj-temp] of target
+          set Water-insulation [Water-insulation] of target
+          set footbath-fre-winter [footbath-fre-winter] of target
+          set footbath-fre-spring [footbath-fre-spring] of target
+          set footbath-fre-summer [footbath-fre-summer] of target
+          set cook-fire-fre [cook-fire-fre] of target
+          set Soup-fre [Soup-fre] of target
+          set Cook-Energy [Cook-Energy] of target
+          set Gasstove-time [Gasstove-time] of target
+          set bread-machine-fre [bread-machine-fre] of target
+          set ele-oven-fre [ele-oven-fre] of target
+          set soymilk-fre [soymilk-fre] of target
+          set ele-stewpot-fre [ele-stewpot-fre] of target
+          set induction-fre [induction-fre] of target
+          set gasstove-fre [gasstove-fre] of target
+          set pressure-fre [pressure-fre] of target
+          set rice-fre [rice-fre] of target
+          set ele-pan-fre [ele-pan-fre] of target
+          set sterilizer-fre [sterilizer-fre] of target
+          set dishes-num [dishes-num] of target
+          set washes-avenum [washes-avenum] of target
+          set wash-dish-method [wash-dish-method] of target
+          set Wash-hotwater [Wash-hotwater] of target
+          set wash-time [wash-time] of target
+          set wash-cycle [wash-cycle] of target
+          set Clean-method [Clean-method] of target
+          set Sweep-fre [Sweep-fre] of target
+          set Mop-fre [Mop-fre] of target
+          set wash-method [wash-method] of target
+          set handwash-fre-winter [handwash-fre-winter] of target
+          set handwash-fre-spring [handwash-fre-spring] of target
+          set handwash-fre-summer [handwash-fre-summer] of target
+          set washmachine-fre-winter [washmachine-fre-winter] of target
+          set washmachine-fre-spring [washmachine-fre-spring] of target
+          set washmachine-fre-summer [washmachine-fre-summer] of target
+          set Rinse-method [Rinse-method] of target
+          set laundry-time [laundry-time] of target
+          set Num-clothes-rinsed [Num-clothes-rinsed] of target
+          set hotwater-laundry [hotwater-laundry] of target
+          set Dry-sterilize [Dry-sterilize] of target
+          set time-heatequipment-winter [time-heatequipment-winter] of target
+          set year-fee [year-fee] of target
+          set winter-fee [winter-fee] of target
+          set spring-fee [spring-fee] of target
+          set summer-fee [summer-fee] of target
+          if [count in-rent-neighbors] of target = 1 [let target1 one-of residences with [rent-neighbor? target] create-rent-with target1]
+          if [count in-purchase-neighbors] of target = 1 [let target1 one-of residences with [purchase-neighbor? target] create-purchase-with target1]
+        ]
+      ]
+      die
+    ]
+  ]
+  
+  let num-death2 count people with [age >= 55 and age <= 79] * 12.47 / 1000
+  set i 1
+  while [i <= num-death2]
+  [
+    set i i + 1
+    let target one-of people with [age >= 55 and age <= 79]
+    ask target
+    [
+      if (relationship = 1 and count people with [hhd = [hhd] of myself] >= 2) ;如果死亡的人为户主，且家庭中超过2人
+      [
+        let hhd1 hhd
+        set relationship 0
+        ifelse (count other people with [hhd = hhd1 and age >= 18] > 0)
+        [ask one-of other people with [hhd = hhd1 and age >= 18] [set relationship 1]]
+        [ask one-of other people with [hhd = hhd1][set relationship 1]]
+        let hhder one-of people with [hhd = hhd1 and relationship = 1]
+        ask hhder 
+        [
+          update-relationship hhd1 hhder
+          set mandatory [mandatory] of target
+          set flexible [flexible] of target + 1
+          set residence-cost [residence-cost] of target
+          set residence-size [residence-size] of target
+          set drinkingwater [drinkingwater] of target      
+          set hotwater [hotwater] of target 
+          set piped-natural-gas [piped-natural-gas] of target 
+          set winterheat [winterheat] of target 
+          set summercool [summercool] of target          
+          set Electric-Footbath [Electric-Footbath] of target 
+          set Water-heater [Water-heater] of target 
+          set showerhead [showerhead] of target 
+          set thermostatic [thermostatic] of target 
+          set Faucet [Faucet] of target 
+          set Dishwasher [Dishwasher] of target 
+          set sterilizer [sterilizer] of target 
+          set sweeping-robot [sweeping-robot] of target 
+          set Electric-mop [Electric-mop] of target 
+          set Intelligent-Toilet [Intelligent-Toilet] of target 
+          set Washing-machine [Washing-machine] of target
+          set Dry-or-sterilize [Dry-or-sterilize] of target
+          set pressure [pressure] of target    
+          set microwave-oven [microwave-oven] of target  
+          set soymilk [soymilk] of target   
+          set Ele-oven [Ele-oven] of target
+          set Terminal-water [Terminal-water] of target
+          set Kitchen-water-heat [Kitchen-water-heat] of target
+          set radiator-bag [radiator-bag] of target
+          set bath-style [bath-style] of target
+          set Bath-fre-winter  [Bath-fre-winter] of target
+          set Bath-fre-spring [Bath-fre-spring] of target
+          set Bath-fre-summer  [Bath-fre-summer] of target
+          set Bath-time-winter [Bath-time-winter] of target
+          set Bath-time-spring [Bath-time-spring] of target
+          set Bath-time-summer [Bath-time-summer] of target
+          set Adj-temp [Adj-temp] of target
+          set Water-insulation [Water-insulation] of target
+          set footbath-fre-winter [footbath-fre-winter] of target
+          set footbath-fre-spring [footbath-fre-spring] of target
+          set footbath-fre-summer [footbath-fre-summer] of target
+          set cook-fire-fre [cook-fire-fre] of target
+          set Soup-fre [Soup-fre] of target
+          set Cook-Energy [Cook-Energy] of target
+          set Gasstove-time [Gasstove-time] of target
+          set bread-machine-fre [bread-machine-fre] of target
+          set ele-oven-fre [ele-oven-fre] of target
+          set soymilk-fre [soymilk-fre] of target
+          set ele-stewpot-fre [ele-stewpot-fre] of target
+          set induction-fre [induction-fre] of target
+          set gasstove-fre [gasstove-fre] of target
+          set pressure-fre [pressure-fre] of target
+          set rice-fre [rice-fre] of target
+          set ele-pan-fre [ele-pan-fre] of target
+          set sterilizer-fre [sterilizer-fre] of target
+          set dishes-num [dishes-num] of target
+          set washes-avenum [washes-avenum] of target
+          set wash-dish-method [wash-dish-method] of target
+          set Wash-hotwater [Wash-hotwater] of target
+          set wash-time [wash-time] of target
+          set wash-cycle [wash-cycle] of target
+          set Clean-method [Clean-method] of target
+          set Sweep-fre [Sweep-fre] of target
+          set Mop-fre [Mop-fre] of target
+          set wash-method [wash-method] of target
+          set handwash-fre-winter [handwash-fre-winter] of target
+          set handwash-fre-spring [handwash-fre-spring] of target
+          set handwash-fre-summer [handwash-fre-summer] of target
+          set washmachine-fre-winter [washmachine-fre-winter] of target
+          set washmachine-fre-spring [washmachine-fre-spring] of target
+          set washmachine-fre-summer [washmachine-fre-summer] of target
+          set Rinse-method [Rinse-method] of target
+          set laundry-time [laundry-time] of target
+          set Num-clothes-rinsed [Num-clothes-rinsed] of target
+          set hotwater-laundry [hotwater-laundry] of target
+          set Dry-sterilize [Dry-sterilize] of target
+          set time-heatequipment-winter [time-heatequipment-winter] of target
+          set year-fee [year-fee] of target
+          set winter-fee [winter-fee] of target
+          set spring-fee [spring-fee] of target
+          set summer-fee [summer-fee] of target
+          if [count in-rent-neighbors] of target = 1 [let target1 one-of residences with [rent-neighbor? target] create-rent-with target1]
+          if [count in-purchase-neighbors] of target = 1 [let target1 one-of residences with [purchase-neighbor? target] create-purchase-with target1]
+        ]
+      ]
+      die
+    ]
+  ]
+  
+  let num-death3 count people with [age >= 80 and age <= 89] * 71.75 / 1000
+  set i 1
+  while [i <= num-death3]
+  [
+    set i i + 1
+    let target one-of people with [age >= 80 and age <= 89]
+    ask target
+    [
+      if (relationship = 1 and count people with [hhd = [hhd] of myself] >= 2) ;如果死亡的人为户主，且家庭中超过2人
+      [
+        let hhd1 hhd
+        set relationship 0
+        ifelse (count other people with [hhd = hhd1 and age >= 18] > 0)
+        [ask one-of other people with [hhd = hhd1 and age >= 18] [set relationship 1]]
+        [ask one-of other people with [hhd = hhd1][set relationship 1]]
+        let hhder one-of people with [hhd = hhd1 and relationship = 1]
+        ask hhder 
+        [
+          update-relationship hhd1 hhder
+          set mandatory [mandatory] of target
+          set flexible [flexible] of target + 1
+          set residence-cost [residence-cost] of target
+          set residence-size [residence-size] of target
+          set drinkingwater [drinkingwater] of target      
+          set hotwater [hotwater] of target 
+          set piped-natural-gas [piped-natural-gas] of target 
+          set winterheat [winterheat] of target 
+          set summercool [summercool] of target          
+          set Electric-Footbath [Electric-Footbath] of target 
+          set Water-heater [Water-heater] of target 
+          set showerhead [showerhead] of target 
+          set thermostatic [thermostatic] of target 
+          set Faucet [Faucet] of target 
+          set Dishwasher [Dishwasher] of target 
+          set sterilizer [sterilizer] of target 
+          set sweeping-robot [sweeping-robot] of target 
+          set Electric-mop [Electric-mop] of target 
+          set Intelligent-Toilet [Intelligent-Toilet] of target 
+          set Washing-machine [Washing-machine] of target
+          set Dry-or-sterilize [Dry-or-sterilize] of target
+          set pressure [pressure] of target    
+          set microwave-oven [microwave-oven] of target  
+          set soymilk [soymilk] of target   
+          set Ele-oven [Ele-oven] of target
+          set Terminal-water [Terminal-water] of target
+          set Kitchen-water-heat [Kitchen-water-heat] of target
+          set radiator-bag [radiator-bag] of target
+          set bath-style [bath-style] of target
+          set Bath-fre-winter  [Bath-fre-winter] of target
+          set Bath-fre-spring [Bath-fre-spring] of target
+          set Bath-fre-summer  [Bath-fre-summer] of target
+          set Bath-time-winter [Bath-time-winter] of target
+          set Bath-time-spring [Bath-time-spring] of target
+          set Bath-time-summer [Bath-time-summer] of target
+          set Adj-temp [Adj-temp] of target
+          set Water-insulation [Water-insulation] of target
+          set footbath-fre-winter [footbath-fre-winter] of target
+          set footbath-fre-spring [footbath-fre-spring] of target
+          set footbath-fre-summer [footbath-fre-summer] of target
+          set cook-fire-fre [cook-fire-fre] of target
+          set Soup-fre [Soup-fre] of target
+          set Cook-Energy [Cook-Energy] of target
+          set Gasstove-time [Gasstove-time] of target
+          set bread-machine-fre [bread-machine-fre] of target
+          set ele-oven-fre [ele-oven-fre] of target
+          set soymilk-fre [soymilk-fre] of target
+          set ele-stewpot-fre [ele-stewpot-fre] of target
+          set induction-fre [induction-fre] of target
+          set gasstove-fre [gasstove-fre] of target
+          set pressure-fre [pressure-fre] of target
+          set rice-fre [rice-fre] of target
+          set ele-pan-fre [ele-pan-fre] of target
+          set sterilizer-fre [sterilizer-fre] of target
+          set dishes-num [dishes-num] of target
+          set washes-avenum [washes-avenum] of target
+          set wash-dish-method [wash-dish-method] of target
+          set Wash-hotwater [Wash-hotwater] of target
+          set wash-time [wash-time] of target
+          set wash-cycle [wash-cycle] of target
+          set Clean-method [Clean-method] of target
+          set Sweep-fre [Sweep-fre] of target
+          set Mop-fre [Mop-fre] of target
+          set wash-method [wash-method] of target
+          set handwash-fre-winter [handwash-fre-winter] of target
+          set handwash-fre-spring [handwash-fre-spring] of target
+          set handwash-fre-summer [handwash-fre-summer] of target
+          set washmachine-fre-winter [washmachine-fre-winter] of target
+          set washmachine-fre-spring [washmachine-fre-spring] of target
+          set washmachine-fre-summer [washmachine-fre-summer] of target
+          set Rinse-method [Rinse-method] of target
+          set laundry-time [laundry-time] of target
+          set Num-clothes-rinsed [Num-clothes-rinsed] of target
+          set hotwater-laundry [hotwater-laundry] of target
+          set Dry-sterilize [Dry-sterilize] of target
+          set time-heatequipment-winter [time-heatequipment-winter] of target
+          set year-fee [year-fee] of target
+          set winter-fee [winter-fee] of target
+          set spring-fee [spring-fee] of target
+          set summer-fee [summer-fee] of target
+          if [count in-rent-neighbors] of target = 1 [let target1 one-of residences with [rent-neighbor? target] create-rent-with target1]
+          if [count in-purchase-neighbors] of target = 1 [let target1 one-of residences with [purchase-neighbor? target] create-purchase-with target1]
+        ]
+      ]
+      die
+    ]
+  ]
+  
+  let num-death4 count people with [age >= 90] * 149.87 / 1000
+  set i 1
+  while [i <= num-death4]
+  [
+    set i i + 1
+    let target one-of people with [age >= 90]
+    ask target
+    [
+      if (relationship = 1 and count people with [hhd = [hhd] of myself] >= 2) ;如果死亡的人为户主，且家庭中超过2人
+      [
+        let hhd1 hhd
+        set relationship 0
+        ifelse (count other people with [hhd = hhd1 and age >= 18] > 0)
+        [ask one-of other people with [hhd = hhd1 and age >= 18] [set relationship 1]]
+        [ask one-of other people with [hhd = hhd1][set relationship 1]]
+        let hhder one-of people with [hhd = hhd1 and relationship = 1]
+        ask hhder 
+        [
+          update-relationship hhd1 hhder
+          set mandatory [mandatory] of target
+          set flexible [flexible] of target + 1
+          set residence-cost [residence-cost] of target
+          set residence-size [residence-size] of target
+          set drinkingwater [drinkingwater] of target      
+          set hotwater [hotwater] of target 
+          set piped-natural-gas [piped-natural-gas] of target 
+          set winterheat [winterheat] of target 
+          set summercool [summercool] of target          
+          set Electric-Footbath [Electric-Footbath] of target 
+          set Water-heater [Water-heater] of target 
+          set showerhead [showerhead] of target 
+          set thermostatic [thermostatic] of target 
+          set Faucet [Faucet] of target 
+          set Dishwasher [Dishwasher] of target 
+          set sterilizer [sterilizer] of target 
+          set sweeping-robot [sweeping-robot] of target 
+          set Electric-mop [Electric-mop] of target 
+          set Intelligent-Toilet [Intelligent-Toilet] of target 
+          set Washing-machine [Washing-machine] of target
+          set Dry-or-sterilize [Dry-or-sterilize] of target
+          set pressure [pressure] of target    
+          set microwave-oven [microwave-oven] of target  
+          set soymilk [soymilk] of target   
+          set Ele-oven [Ele-oven] of target
+          set Terminal-water [Terminal-water] of target
+          set Kitchen-water-heat [Kitchen-water-heat] of target
+          set radiator-bag [radiator-bag] of target
+          set bath-style [bath-style] of target
+          set Bath-fre-winter  [Bath-fre-winter] of target
+          set Bath-fre-spring [Bath-fre-spring] of target
+          set Bath-fre-summer  [Bath-fre-summer] of target
+          set Bath-time-winter [Bath-time-winter] of target
+          set Bath-time-spring [Bath-time-spring] of target
+          set Bath-time-summer [Bath-time-summer] of target
+          set Adj-temp [Adj-temp] of target
+          set Water-insulation [Water-insulation] of target
+          set footbath-fre-winter [footbath-fre-winter] of target
+          set footbath-fre-spring [footbath-fre-spring] of target
+          set footbath-fre-summer [footbath-fre-summer] of target
+          set cook-fire-fre [cook-fire-fre] of target
+          set Soup-fre [Soup-fre] of target
+          set Cook-Energy [Cook-Energy] of target
+          set Gasstove-time [Gasstove-time] of target
+          set bread-machine-fre [bread-machine-fre] of target
+          set ele-oven-fre [ele-oven-fre] of target
+          set soymilk-fre [soymilk-fre] of target
+          set ele-stewpot-fre [ele-stewpot-fre] of target
+          set induction-fre [induction-fre] of target
+          set gasstove-fre [gasstove-fre] of target
+          set pressure-fre [pressure-fre] of target
+          set rice-fre [rice-fre] of target
+          set ele-pan-fre [ele-pan-fre] of target
+          set sterilizer-fre [sterilizer-fre] of target
+          set dishes-num [dishes-num] of target
+          set washes-avenum [washes-avenum] of target
+          set wash-dish-method [wash-dish-method] of target
+          set Wash-hotwater [Wash-hotwater] of target
+          set wash-time [wash-time] of target
+          set wash-cycle [wash-cycle] of target
+          set Clean-method [Clean-method] of target
+          set Sweep-fre [Sweep-fre] of target
+          set Mop-fre [Mop-fre] of target
+          set wash-method [wash-method] of target
+          set handwash-fre-winter [handwash-fre-winter] of target
+          set handwash-fre-spring [handwash-fre-spring] of target
+          set handwash-fre-summer [handwash-fre-summer] of target
+          set washmachine-fre-winter [washmachine-fre-winter] of target
+          set washmachine-fre-spring [washmachine-fre-spring] of target
+          set washmachine-fre-summer [washmachine-fre-summer] of target
+          set Rinse-method [Rinse-method] of target
+          set laundry-time [laundry-time] of target
+          set Num-clothes-rinsed [Num-clothes-rinsed] of target
+          set hotwater-laundry [hotwater-laundry] of target
+          set Dry-sterilize [Dry-sterilize] of target
+          set time-heatequipment-winter [time-heatequipment-winter] of target
+          set year-fee [year-fee] of target
+          set winter-fee [winter-fee] of target
+          set spring-fee [spring-fee] of target
+          set summer-fee [summer-fee] of target
+          if [count in-rent-neighbors] of target = 1 [let target1 one-of residences with [rent-neighbor? target] create-rent-with target1]
+          if [count in-purchase-neighbors] of target = 1 [let target1 one-of residences with [purchase-neighbor? target] create-purchase-with target1]
+        ]
+      ]
+      die
+    ]
+  ]
+  
+  
+  print "death model finished"
+end

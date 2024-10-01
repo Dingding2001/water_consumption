@@ -1,0 +1,832 @@
+shoppings-own
+[
+  frequency
+  loc ;1 工作学习地附近 2 家附近 3 其他地点
+  date ; 1 weekday, 2 weekend
+]
+
+leisures-own
+[
+  frequency
+  loc
+  date ; 1 weekday, 2 weekend
+]
+
+to generate-daily-plan
+  ;agent随机生成daily plan
+  ask people with [count in-shopping-neighbors = 0 and count in-leisure-neighbors = 0 and (weekday-shopping != 0 or weekend-shopping != 0 or weekday-leisure != 0 or weekend-leisure != 0)]
+  [
+    let home-shopping no-turtles
+    let ws-shopping no-turtles
+    let other-shopping no-turtles
+    
+    ;家附近的shopping places
+    set home-shopping shops with [category = 1] in-radius 5
+    if count home-shopping < 10 [set home-shopping min-n-of 10 shops with [category = 1] [distance myself]]
+    let home-shopping1 []
+    let home-shopping-prob []
+    ask home-shopping [set home-shopping1 lput who home-shopping1 set home-shopping-prob lput capacity home-shopping-prob]
+    
+    ;学校/工作地附近的shopping places
+    if count in-student-neighbors = 1 
+    [
+      ask one-of in-student-neighbors 
+      [
+        set ws-shopping shops with [category = 1 and not member? self home-shopping] in-radius 5
+        if count ws-shopping < 10 [set ws-shopping min-n-of 10 shops with [category = 1 and not member? self home-shopping] [distance myself]]
+      ]
+    ]   
+    if count in-employee-neighbors = 1
+    [
+      ask one-of in-employee-neighbors 
+      [
+        set ws-shopping shops with [category = 1 and not member? self home-shopping] in-radius 5
+        if count ws-shopping < 10 [set ws-shopping min-n-of 10 shops with [category = 1 and not member? self home-shopping] [distance myself]]
+      ]
+    ]
+    let ws-shopping1 []
+    let ws-shopping-prob []
+    ask ws-shopping [set ws-shopping1 lput who ws-shopping1 set ws-shopping-prob lput capacity ws-shopping-prob]
+  
+    ;其他地区的shopping places
+    set other-shopping shops with [category = 1 and not member? self home-shopping and not member? self ws-shopping]
+    let other-shopping-prob []
+    let other-shopping1 []
+    ask other-shopping [set other-shopping1 lput who other-shopping1 set other-shopping-prob lput capacity other-shopping-prob]
+    
+    ;将leisure places （即shops with category = 2）分类为home-leisure、ws-leisure、other-leisure
+    let home-leisure no-turtles
+    let ws-leisure no-turtles
+    let other-leisure no-turtles
+    ;home leisure
+    set home-leisure shops with [category = 2] in-radius 5 
+    if count home-leisure < 10 [set home-leisure min-n-of 10 shops with [category = 2] [distance myself]]
+    ;计算每个shops被分到客人的概率
+    let home-leisure1 []
+    let home-leisure-prob []
+    ask home-leisure [set home-leisure1 lput who home-leisure1 set home-leisure-prob lput capacity home-leisure-prob]
+    
+    
+    if count in-student-neighbors = 1 
+    [
+      ask one-of in-student-neighbors 
+      [
+        set ws-leisure shops with [category = 2 and not member? self home-leisure] in-radius 5
+        if ws-leisure = no-turtles [set ws-leisure min-n-of 10 shops with [category = 2 and  not member? self home-leisure] [distance myself]]
+      ]
+    ]
+    if count in-employee-neighbors = 1 
+    [
+      ask one-of in-employee-neighbors 
+      [
+        set ws-leisure shops with [category = 2 and not member? self home-leisure] in-radius 5
+        if ws-leisure = no-turtles [set ws-leisure min-n-of 10 shops with [category = 2 and not member? self home-leisure] [distance myself]]
+      ]
+    ]
+    
+    let ws-leisure1 []
+    let ws-leisure-prob []
+    ask ws-leisure [set ws-leisure1 lput who ws-leisure1 set ws-leisure-prob lput capacity ws-leisure-prob]
+    
+    set other-leisure shops with [category = 2 and not member? self home-leisure and not member? self ws-leisure]
+    let other-leisure1 []
+    let other-leisure-prob []
+    ask other-leisure [set other-leisure1 lput who other-leisure1 set other-leisure-prob lput capacity other-leisure-prob]
+    
+    (ifelse
+      ;工作日不购物
+      weekday-shopping = 0 []
+      
+      ;工作日购物1~5次
+      weekday-shopping >= 1 and weekday-shopping <= 5 
+      [
+        let fre1 1 + random 5
+        let weekdayleisure [1 2 3]
+        py:set "weekdayleisure" weekdayleisure
+        py:set "weekdayleisureprob" weekdayleisureloc
+        (py:run
+          "import random"
+          "result = random.choices (weekdayleisure, weekdayleisureprob)"
+        )
+        let loc1 item 0 py:runresult "result"
+        generate-a-shopping loc1 fre1 1 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+      ]
+      
+      ;工作日购物6~10次
+      weekday-shopping >= 6 and weekday-shopping <= 10
+      [
+        let fre1 5
+        let weekdayleisure [1 2 3]
+        py:set "weekdayleisure" weekdayleisure
+        py:set "weekdayleisureprob" weekdayleisureloc
+        (py:run
+          "import random"
+          "result = random.choices (weekdayleisure, weekdayleisureprob)"
+        )
+        let loc1 item 0 py:runresult "result"
+        generate-a-shopping loc1 fre1 1 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+        
+        let fre2 random 5 + 1
+        (py:run
+          "import random"
+          "result2 = random.choices (weekdayleisure, weekdayleisureprob)"
+        )
+        let loc2 item 0 py:runresult "result2"
+        generate-a-shopping loc2 fre2 1 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+      ]
+      
+      ;工作日购物11~15次
+      [
+        let fre1 5
+        let weekdayleisure [1 2 3]
+        py:set "weekdayleisure" weekdayleisure
+        py:set "weekdayleisureprob" weekdayleisureloc
+        (py:run
+          "import random"
+          "result = random.choices (weekdayleisure, weekdayleisureprob)"
+        )
+        let loc1 item 0 py:runresult "result"
+        generate-a-shopping loc1 fre1 1 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+        
+        let fre2 5
+        py:set "weekdayleisure" weekdayleisure
+        py:set "weekdayleisureprob" weekdayleisureloc
+        (py:run
+          "import random"
+          "result = random.choices (weekdayleisure, weekdayleisureprob)"
+        )
+        let loc2 item 0 py:runresult "result"
+        generate-a-shopping loc2 fre2 1 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+        
+        let fre3 random 5 + 1
+        (py:run
+          "import random"
+          "result2 = random.choices (weekdayleisure, weekdayleisureprob)"
+        )
+        let loc3 item 0 py:runresult "result2"
+        generate-a-shopping loc3 fre3 1 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+      ]
+    )
+    
+    (ifelse
+      ;非工作日不购物
+      weekend-shopping = 0 []
+      
+      ;非工作日购物1~5次
+      weekend-shopping >= 1 and weekend-shopping <= 5 
+      [
+        let fre1 1 + random 5
+        let weekendleisure [1 2 3]
+        py:set "weekendleisure" weekendleisure
+        py:set "weekendleisureprob" weekendleisureloc
+        (py:run
+          "import random"
+          "result = random.choices (weekendleisure, weekendleisureprob)"
+        )
+        let loc1 item 0 py:runresult "result"
+        generate-a-shopping loc1 fre1 2 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+      ]
+      
+      ;非工作日购物6~10次
+      weekend-shopping >= 6 and weekend-shopping <= 10
+      [
+        let fre1 5
+        let weekendleisure [1 2 3]
+        py:set "weekendleisure" weekendleisure
+        py:set "weekendleisureprob" weekendleisureloc
+        (py:run
+          "import random"
+          "result = random.choices (weekendleisure, weekendleisureprob)"
+        )
+        let loc1 item 0 py:runresult "result"
+        generate-a-shopping loc1 fre1 2 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+        
+        let fre2 random 5 + 1
+        (py:run
+          "import random"
+          "result2 = random.choices (weekendleisure, weekendleisureprob)"
+        )
+        let loc2 item 0 py:runresult "result2"
+        generate-a-shopping loc2 fre2 2 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+      ]
+      
+      ;非工作日购物11~15次
+      [
+        let fre1 5
+        let weekendleisure [1 2 3]
+        py:set "weekendleisure" weekendleisure
+        py:set "weekendleisureprob" weekendleisureloc
+        (py:run
+          "import random"
+          "result = random.choices (weekendleisure, weekendleisureprob)"
+        )
+        let loc1 item 0 py:runresult "result"
+        generate-a-shopping loc1 fre1 2 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+        
+        let fre2 5
+        py:set "weekendleisure" weekendleisure
+        py:set "weekendleisureprob" weekendleisureloc
+        (py:run
+          "import random"
+          "result = random.choices (weekendleisure, weekendleisureprob)"
+        )
+        let loc2 item 0 py:runresult "result"
+        generate-a-shopping loc2 fre2 2 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+        
+        let fre3 random 5 + 1
+        (py:run
+          "import random"
+          "result2 = random.choices (weekendleisure, weekendleisureprob)"
+        )
+        let loc3 item 0 py:runresult "result2"
+        generate-a-shopping loc3 fre3 2 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+      ]
+    )
+    
+    (ifelse
+      ;工作日不休闲
+      weekday-leisure = 0 []
+      
+      ;工作日休闲1~5次
+      weekday-leisure >= 1 and weekday-leisure <= 5 
+      [
+        let fre1 1 + random 5
+        let weekdayleisure [1 2 3]
+        py:set "weekdayleisure" weekdayleisure
+        py:set "weekdayleisureprob" weekdayleisureloc
+        (py:run
+          "import random"
+          "result = random.choices (weekdayleisure, weekdayleisureprob)"
+        )
+        let loc1 item 0 py:runresult "result"
+        generate-a-leisure loc1 fre1 1 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+      ]
+      
+      ;工作日休闲6~10次
+      weekday-leisure >= 6 and weekday-leisure <= 10
+      [
+        let fre1 5
+        let weekdayleisure [1 2 3]
+        py:set "weekdayleisure" weekdayleisure
+        py:set "weekdayleisureprob" weekdayleisureloc
+        (py:run
+          "import random"
+          "result = random.choices (weekdayleisure, weekdayleisureprob)"
+        )
+        let loc1 item 0 py:runresult "result"
+        generate-a-leisure loc1 fre1 1 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+        
+        let fre2 random 5 + 1
+        (py:run
+          "import random"
+          "result2 = random.choices (weekdayleisure, weekdayleisureprob)"
+        )
+        let loc2 item 0 py:runresult "result2"
+        generate-a-leisure loc2 fre2 1 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+      ]
+      
+      ;工作日休闲11~15次
+      [
+        let fre1 5
+        let weekdayleisure [1 2 3]
+        py:set "weekdayleisure" weekdayleisure
+        py:set "weekdayleisureprob" weekdayleisureloc
+        (py:run
+          "import random"
+          "result = random.choices (weekdayleisure, weekdayleisureprob)"
+        )
+        let loc1 item 0 py:runresult "result"
+        generate-a-leisure loc1 fre1 1 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+        
+        let fre2 5
+        py:set "weekdayleisure" weekdayleisure
+        py:set "weekdayleisureprob" weekdayleisureloc
+        (py:run
+          "import random"
+          "result = random.choices (weekdayleisure, weekdayleisureprob)"
+        )
+        let loc2 item 0 py:runresult "result"
+        generate-a-leisure loc2 fre2 1 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+        
+        let fre3 random 5 + 1
+        (py:run
+          "import random"
+          "result2 = random.choices (weekdayleisure, weekdayleisureprob)"
+        )
+        let loc3 item 0 py:runresult "result2"
+        generate-a-leisure loc3 fre3 1 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+      ]
+    )
+    
+    (ifelse
+      ;非工作日不休闲
+      weekend-leisure = 0 []
+      
+      ;非工作日休闲1~5次
+      weekend-leisure >= 1 and weekend-leisure <= 5 
+      [
+        let fre1 1 + random 5
+        let weekendleisure [1 2 3]
+        py:set "weekendleisure" weekendleisure
+        py:set "weekendleisureprob" weekendleisureloc
+        (py:run
+          "import random"
+          "result = random.choices (weekendleisure, weekendleisureprob)"
+        )
+        let loc1 item 0 py:runresult "result"
+        generate-a-leisure loc1 fre1 2 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+      ]
+      
+      ;非工作日休闲6~10次
+      weekend-leisure >= 6 and weekend-leisure <= 10
+      [
+        let fre1 5
+        let weekendleisure [1 2 3]
+        py:set "weekendleisure" weekendleisure
+        py:set "weekendleisureprob" weekendleisureloc
+        (py:run
+          "import random"
+          "result = random.choices (weekendleisure, weekendleisureprob)"
+        )
+        let loc1 item 0 py:runresult "result"
+        generate-a-leisure loc1 fre1 2 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+        
+        let fre2 random 5 + 1
+        (py:run
+          "import random"
+          "result2 = random.choices (weekendleisure, weekendleisureprob)"
+        )
+        let loc2 item 0 py:runresult "result2"
+        generate-a-leisure loc2 fre2 2 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+      ]
+      
+      ;非工作日休闲11~15次
+      [
+        let fre1 5
+        let weekendleisure [1 2 3]
+        py:set "weekendleisure" weekendleisure
+        py:set "weekendleisureprob" weekendleisureloc
+        (py:run
+          "import random"
+          "result = random.choices (weekendleisure, weekendleisureprob)"
+        )
+        let loc1 item 0 py:runresult "result"
+        generate-a-leisure loc1 fre1 2 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+        
+        let fre2 5
+        py:set "weekendleisure" weekendleisure
+        py:set "weekendleisureprob" weekendleisureloc
+        (py:run
+          "import random"
+          "result = random.choices (weekendleisure, weekendleisureprob)"
+        )
+        let loc2 item 0 py:runresult "result"
+        generate-a-leisure loc2 fre2 2 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+        
+        let fre3 random 5 + 1
+        (py:run
+          "import random"
+          "result2 = random.choices (weekendleisure, weekendleisureprob)"
+        )
+        let loc3 item 0 py:runresult "result2"
+        generate-a-leisure loc3 fre3 2 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+      ]
+    )
+  ]
+end
+
+to generate-a-shopping [p-loc p-frequency p-date p-home-shopping p-home-shopping-prob p-ws-shopping p-ws-shopping-prob p-other-shopping p-other-shopping-prob]
+  if p-loc = 1 ;公司/学校附近的shopping
+  [
+    ifelse count in-student-neighbors = 0 and count in-employee-neighbors = 0 
+    [
+      ;如果没有公司/学校，需求被转移至其他地区
+      ifelse random-float 1 > 0.5
+      [
+        ;转移至home-shopping
+        py:set "homeshopping" p-home-shopping
+        py:set "homeshoppingprob" p-home-shopping-prob
+        (py:run
+          "import random"
+          "result = random.choices (homeshopping, homeshoppingprob)"
+        )
+        let candidate shop item 0 py:runresult "result"
+        ifelse not member? candidate in-shopping-neighbors
+        [
+          create-shopping-with candidate
+          ask one-of my-shoppings with [other-end = candidate][set loc p-loc set frequency p-frequency set date p-date]
+        ]
+        [
+          ask one-of my-shoppings with [other-end = candidate][set frequency frequency + p-frequency set date p-date]
+        ]
+      ]
+      [
+        ;转移至other-shopping
+        py:set "othershopping" p-other-shopping
+        py:set "othershoppingprob" p-other-shopping-prob
+        (py:run
+          "import random"
+          "result = random.choices (othershopping, othershoppingprob)"
+        )
+        let candidate shop item 0 py:runresult "result"
+        ifelse not member? candidate in-shopping-neighbors
+        [
+          create-shopping-with candidate
+          ask one-of my-shoppings with [other-end = candidate][set loc p-loc set frequency p-frequency set date p-date]
+        ]
+        [
+          ask one-of my-shoppings with [other-end = candidate][set frequency frequency + p-frequency set date p-date]
+        ]
+      ]
+    ]
+    [
+      ;有公司/学校，需求发生再公司/学校附近
+      py:set "wsshopping" p-ws-shopping
+      py:set "wsshoppingprob" p-ws-shopping-prob
+      (py:run
+        "import random"
+        "result = random.choices (wsshopping, wsshoppingprob)"
+      )
+      let candidate shop item 0 py:runresult "result"
+      ifelse not member? candidate in-shopping-neighbors
+      [
+        create-shopping-with candidate
+        ask one-of my-shoppings with [other-end = candidate][set loc p-loc set frequency p-frequency set date p-date]
+      ]
+      [
+        ask one-of my-shoppings with [other-end = candidate][set frequency frequency + p-frequency set date p-date]
+      ]
+    ]
+  ]
+  if p-loc = 2 ;家附近的shopping
+  [
+    py:set "homeshopping" p-home-shopping
+    py:set "homeshoppingprob" p-home-shopping-prob
+    (py:run
+      "import random"
+      "result = random.choices (homeshopping, homeshoppingprob)"
+    )
+    let candidate shop item 0 py:runresult "result"
+    ifelse not member? candidate in-shopping-neighbors
+    [
+      create-shopping-with candidate
+      ask one-of my-shoppings with [other-end = candidate][set loc p-loc set frequency p-frequency set date p-date]
+    ]
+    [
+      ask one-of my-shoppings with [other-end = candidate][set frequency frequency + p-frequency set date p-date]
+    ]
+  ]
+  if p-loc = 3;其他地点的shopping
+  [
+    py:set "othershopping" p-other-shopping
+    py:set "othershoppingprob" p-other-shopping-prob
+    (py:run
+      "import random"
+      "result = random.choices (othershopping, othershoppingprob)"
+    )
+    let candidate shop item 0 py:runresult "result"
+    ifelse not member? candidate in-shopping-neighbors
+    [
+      set candidate candidate create-shopping-with candidate
+      ask one-of my-shoppings with [other-end = candidate][set loc p-loc set frequency p-frequency set date p-date]
+    ]
+    [
+      ask one-of my-shoppings with [other-end = candidate][set frequency frequency + p-frequency set date p-date]
+    ]
+  ]
+end
+
+to generate-a-leisure [p-loc p-frequency p-date p-home-leisure p-home-leisure-prob p-ws-leisure p-ws-leisure-prob p-other-leisure p-other-leisure-prob]
+  if p-loc = 1 ;公司/学校附近的leisure
+  [
+    ifelse count in-student-neighbors = 0 and count in-employee-neighbors = 0 
+    [
+      ;如果没有公司/学校，需求被转移至其他地区
+      ifelse random-float 1 > 0.5
+      [
+        ;转移至home-leisure
+        py:set "homeleisure" p-home-leisure
+        py:set "homeleisureprob" p-home-leisure-prob
+        (py:run
+          "import random"
+          "result = random.choices (homeleisure, homeleisureprob)"
+        )
+        let candidate shop item 0 py:runresult "result"
+        ifelse not member? candidate in-leisure-neighbors
+        [
+          create-leisure-with candidate
+          ask one-of my-leisures with [other-end = candidate][set loc p-loc set frequency p-frequency set date p-date]
+        ]
+        [
+          ask one-of my-leisures with [other-end = candidate][set frequency frequency + p-frequency]
+        ]
+      ]
+      [
+        ;转移至other-leisure
+        py:set "otherleisure" p-other-leisure
+        py:set "otherleisureprob" p-other-leisure-prob
+        (py:run
+          "import random"
+          "result = random.choices (otherleisure, otherleisureprob)"
+        )
+        let candidate shop item 0 py:runresult "result"
+        ifelse not member? candidate in-leisure-neighbors
+        [
+          create-leisure-with candidate
+          ask one-of my-leisures with [other-end = candidate][set loc p-loc set frequency p-frequency set date p-date]
+        ]
+        [
+          ask one-of my-leisures with [other-end = candidate][set frequency frequency + p-frequency set date p-date]
+        ]
+      ]
+    ]
+    [
+      ;有公司/学校，需求发生再公司/学校附近
+      py:set "wsleisure" p-ws-leisure
+      py:set "wsleisureprob" p-ws-leisure-prob
+      (py:run
+        "import random"
+        "result = random.choices (wsleisure, wsleisureprob)"
+      )
+      let candidate shop item 0 py:runresult "result"
+      ifelse not member? candidate in-leisure-neighbors
+      [
+        create-leisure-with candidate
+        ask one-of my-leisures with [other-end = candidate][set loc p-loc set frequency p-frequency set date p-date]
+      ]
+      [
+        ask one-of my-leisures with [other-end = candidate][set frequency frequency + p-frequency set date p-date]
+      ]
+    ]
+  ]
+  if p-loc = 2 ;家附近的leisure
+  [
+    py:set "homeleisure" p-home-leisure
+    py:set "homeleisureprob" p-home-leisure-prob
+    (py:run
+      "import random"
+      "result = random.choices (homeleisure, homeleisureprob)"
+    )
+    let candidate shop item 0 py:runresult "result"
+    ifelse not member? candidate in-leisure-neighbors
+    [
+      create-leisure-with candidate
+      ask one-of my-leisures with [other-end = candidate][set loc p-loc set frequency p-frequency set date p-date]
+    ]
+    [
+      ask one-of my-leisures with [other-end = candidate][set frequency frequency + p-frequency set date p-date]
+    ]
+  ]
+  if p-loc = 3;其他地点的leisure
+  [
+    py:set "otherleisure" p-other-leisure
+    py:set "otherleisureprob" p-other-leisure-prob
+    (py:run
+      "import random"
+      "result = random.choices (otherleisure, otherleisureprob)"
+    )
+    let candidate shop item 0 py:runresult "result"
+    ifelse not member? candidate in-leisure-neighbors
+    [
+      set candidate candidate create-leisure-with candidate
+      ask one-of my-leisures with [other-end = candidate][set loc p-loc set frequency p-frequency set date p-date]
+    ]
+    [
+      ask one-of my-leisures with [other-end = candidate][set frequency frequency + p-frequency set date p-date]
+    ]
+  ]
+end
+
+to update-daily-plan
+  ;补齐shopping
+  ask people with [sum [frequency] of my-shoppings with [date = 1] < weekday-shopping or sum [frequency] of my-shoppings with [date = 2] < weekend-shopping]
+  [
+    let home-shopping no-turtles
+    let ws-shopping no-turtles
+    let other-shopping no-turtles
+    ;家附近的shopping places
+    set home-shopping shops with [category = 1] in-radius 5
+    if count home-shopping < 10 [set home-shopping min-n-of 10 shops with [category = 1] [distance myself]]
+    let home-shopping1 []
+    let home-shopping-prob []
+    ask home-shopping [set home-shopping1 lput who home-shopping1 set home-shopping-prob lput capacity home-shopping-prob]
+    
+    ;学校/工作地附近的shopping places
+    if count in-student-neighbors = 1 
+    [
+      ask one-of in-student-neighbors 
+      [
+        set ws-shopping shops with [category = 1 and not member? self home-shopping] in-radius 5
+        if count ws-shopping < 10 [set ws-shopping min-n-of 10 shops with [category = 1 and not member? self home-shopping] [distance myself]]
+      ]
+    ]   
+    if count in-employee-neighbors = 1
+    [
+      ask one-of in-employee-neighbors 
+      [
+        set ws-shopping shops with [category = 1 and not member? self home-shopping] in-radius 5
+        if count ws-shopping < 10 [set ws-shopping min-n-of 10 shops with [category = 1 and not member? self home-shopping] [distance myself]]
+      ]
+    ]
+    let ws-shopping1 []
+    let ws-shopping-prob []
+    ask ws-shopping [set ws-shopping1 lput who ws-shopping1 set ws-shopping-prob lput capacity ws-shopping-prob]
+  
+    ;其他地区的shopping places
+    set other-shopping shops with [category = 1 and not member? self home-shopping and not member? self ws-shopping]
+    let other-shopping-prob []
+    let other-shopping1 []
+    ask other-shopping [set other-shopping1 lput who other-shopping1 set other-shopping-prob lput capacity other-shopping-prob]
+    
+    if sum [frequency] of my-shoppings with [date = 1] < weekday-shopping
+    [
+      let n1 weekday-shopping - sum [frequency] of my-shoppings
+      (ifelse
+        n1 < 5
+        [
+          let fre1 n1
+          let weekdayshopping [1 2 3]
+          py:set "weekdayshopping" weekdayshopping
+          py:set "weekdayshoppingprob" weekdayshoppingloc
+          (py:run
+            "import random"
+            "result = random.choices (weekdayshopping, weekdayshoppingprob)"
+          )
+          let loc1 item 0 py:runresult "result"
+          generate-a-shopping loc1 fre1 1 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+        ]
+        
+        n1 >= 5 and n1 <= 10
+        [
+          let fre1 5
+          let weekendshopping [1 2 3]
+          py:set "weekendshopping" weekendshopping
+          py:set "weekendshoppingprob" weekendshoppingloc
+          (py:run
+            "import random"
+            "result = random.choices (weekendshopping, weekendshoppingprob)"
+          )
+          let loc1 item 0 py:runresult "result"
+          generate-a-shopping loc1 fre1 2 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+          
+          let fre2 random n1 - 5
+          (py:run
+            "import random"
+            "result2 = random.choices (weekendshopping, weekendshoppingprob)"
+          )
+          let loc2 item 0 py:runresult "result2"
+          generate-a-shopping loc2 fre2 2 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+        ]
+        
+        ;n1 >= 11 and n1 <= 15 
+        [
+          let fre1 5
+          let weekdayshopping [1 2 3]
+          py:set "weekdayshopping" weekdayshopping
+          py:set "weekdayshoppingprob" weekdayshoppingloc
+          (py:run
+            "import random"
+            "result = random.choices (weekdayshopping, weekdayshoppingprob)"
+          )
+          let loc1 item 0 py:runresult "result"
+          generate-a-shopping loc1 fre1 1 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+          
+          let fre2 5
+          py:set "weekdayshopping" weekdayshopping
+          py:set "weekdayshoppingprob" weekdayshoppingloc
+          (py:run
+            "import random"
+            "result = random.choices (weekdayshopping, weekdayshoppingprob)"
+          )
+          let loc2 item 0 py:runresult "result"
+          generate-a-shopping loc2 fre2 1 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+          
+          let fre3 random n1 - 10
+          (py:run
+            "import random"
+            "result2 = random.choices (weekdayshopping, weekdayshoppingprob)"
+          )
+          let loc3 item 0 py:runresult "result2"
+          generate-a-shopping loc3 fre3 1 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
+        ]
+      )
+    ]
+  ]
+  
+  ;补齐leisure
+  ask people with [sum [frequency] of my-leisures with [date = 1] < weekday-leisure or sum [frequency] of my-leisures with [date = 2] < weekend-leisure]
+  [
+    let home-leisure no-turtles
+    let ws-leisure no-turtles
+    let other-leisure no-turtles
+    ;家附近的leisure places
+    set home-leisure shops with [category = 1] in-radius 5
+    if count home-leisure < 10 [set home-leisure min-n-of 10 shops with [category = 1] [distance myself]]
+    let home-leisure1 []
+    let home-leisure-prob []
+    ask home-leisure [set home-leisure1 lput who home-leisure1 set home-leisure-prob lput capacity home-leisure-prob]
+    
+    ;学校/工作地附近的leisure places
+    if count in-student-neighbors = 1 
+    [
+      ask one-of in-student-neighbors 
+      [
+        set ws-leisure shops with [category = 1 and not member? self home-leisure] in-radius 5
+        if count ws-leisure < 10 [set ws-leisure min-n-of 10 shops with [category = 1 and not member? self home-leisure] [distance myself]]
+      ]
+    ]   
+    if count in-employee-neighbors = 1
+    [
+      ask one-of in-employee-neighbors 
+      [
+        set ws-leisure shops with [category = 1 and not member? self home-leisure] in-radius 5
+        if count ws-leisure < 10 [set ws-leisure min-n-of 10 shops with [category = 1 and not member? self home-leisure] [distance myself]]
+      ]
+    ]
+    let ws-leisure1 []
+    let ws-leisure-prob []
+    ask ws-leisure [set ws-leisure1 lput who ws-leisure1 set ws-leisure-prob lput capacity ws-leisure-prob]
+  
+    ;其他地区的leisure places
+    set other-leisure shops with [category = 1 and not member? self home-leisure and not member? self ws-leisure]
+    let other-leisure-prob []
+    let other-leisure1 []
+    ask other-leisure [set other-leisure1 lput who other-leisure1 set other-leisure-prob lput capacity other-leisure-prob]
+    
+    if sum [frequency] of my-leisures with [date = 1] < weekday-leisure
+    [
+      let n1 weekday-leisure - sum [frequency] of my-leisures
+      (ifelse
+        n1 < 5
+        [
+          let fre1 n1
+          let weekdayleisure [1 2 3]
+          py:set "weekdayleisure" weekdayleisure
+          py:set "weekdayleisureprob" weekdayleisureloc
+          (py:run
+            "import random"
+            "result = random.choices (weekdayleisure, weekdayleisureprob)"
+          )
+          let loc1 item 0 py:runresult "result"
+          generate-a-leisure loc1 fre1 1 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+        ]
+        
+        n1 >= 5 and n1 <= 10
+        [
+          let fre1 5
+          let weekendleisure [1 2 3]
+          py:set "weekendleisure" weekendleisure
+          py:set "weekendleisureprob" weekendleisureloc
+          (py:run
+            "import random"
+            "result = random.choices (weekendleisure, weekendleisureprob)"
+          )
+          let loc1 item 0 py:runresult "result"
+          generate-a-leisure loc1 fre1 2 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+          
+          let fre2 random n1 - 5
+          (py:run
+            "import random"
+            "result2 = random.choices (weekendleisure, weekendleisureprob)"
+          )
+          let loc2 item 0 py:runresult "result2"
+          generate-a-leisure loc2 fre2 2 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+        ]
+        
+        ;n1 >= 11 and n1 <= 15 
+        [
+          let fre1 5
+          let weekdayleisure [1 2 3]
+          py:set "weekdayleisure" weekdayleisure
+          py:set "weekdayleisureprob" weekdayleisureloc
+          (py:run
+            "import random"
+            "result = random.choices (weekdayleisure, weekdayleisureprob)"
+          )
+          let loc1 item 0 py:runresult "result"
+          generate-a-leisure loc1 fre1 1 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+          
+          let fre2 5
+          py:set "weekdayleisure" weekdayleisure
+          py:set "weekdayleisureprob" weekdayleisureloc
+          (py:run
+            "import random"
+            "result = random.choices (weekdayleisure, weekdayleisureprob)"
+          )
+          let loc2 item 0 py:runresult "result"
+          generate-a-leisure loc2 fre2 1 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+          
+          let fre3 random n1 - 10
+          (py:run
+            "import random"
+            "result2 = random.choices (weekdayleisure, weekdayleisureprob)"
+          )
+          let loc3 item 0 py:runresult "result2"
+          generate-a-leisure loc3 fre3 1 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
+        ]
+      )
+    ]
+  ]
+  
+  print "Daily Plan Finished"
+end
