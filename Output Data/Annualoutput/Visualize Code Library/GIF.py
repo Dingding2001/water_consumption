@@ -19,7 +19,7 @@ else:
     kinds_files = None
 
 print("kinds_files的路径为：", kinds_files)
-
+#%%
 current_folder = kinds_files
 for file_name in os.listdir(current_folder):
     file_path = os.path.join(current_folder, file_name)
@@ -48,6 +48,7 @@ for file_name in os.listdir(current_folder):
             # 删除Geometrically Spaced文件夹
             shutil.rmtree(gs_folder)
 #这一块代码是对EV部分的调整，使其可以适应EV部分
+#%%
 
 #文件夹分类
 
@@ -85,6 +86,8 @@ for category in image_categories:
                 shutil.move(image_path, os.path.join(category_folder_path, filename))
                 
 
+
+
 def create_gif(folder_path):
     images = []
     folder_name = os.path.basename(folder_path)
@@ -104,7 +107,6 @@ def create_gif(folder_path):
     # 生成动图
     gif_path = os.path.join(folder_path, f'{folder_name}.gif')
     images[0].save(gif_path, save_all=True, append_images=images[1:], loop=0, duration=500)
-
 
 # 处理主文件夹中的子文件夹
 main_folder = kinds_files  

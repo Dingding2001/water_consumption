@@ -1,14 +1,14 @@
 to update-relationship [householdid householder]
-  ;初始化家庭关系
+  ;set all members' relationship to 0
   ask householder [ask other people with [hhd = householdid][set relationship 0]]
   
   let hhder-couple one-of people with [couple-neighbor? householder]
   if (hhder-couple != nobody)
   [
-    ;户主的配偶
+    ;spouse of householder
     ask hhder-couple [if hhd = householdid [set relationship 2]]
     
-    ;户主配偶的父母
+    ;Parents of the spouse of the head of household
     ask people with [hhd = householdid and relationship = 0 and age > [age] of hhder-couple and parent-neighbor? hhder-couple][set relationship 5]
     
     let father one-of people with [hhd = householdid and relationship = 5 and gender = 1]
@@ -23,26 +23,26 @@ to update-relationship [householdid householder]
       ask people with [hhd = householdid and relationship = 0 and age > [age] of hhder-couple and grapa-neighbor? hhder-couple and parent-neighbor? mother] [set relationship 10]
     ]
     
-    ;父亲存在，母亲不存在，判断户主配偶的外公外婆
+    ;seek for of grandparents of head of household spouse
     if (father != nobody and mother = nobody)
     [
       ask people with [hhd = householdid and relationship = 0 and age < [age] of hhder-couple and grapa-neighbor? hhder-couple and not parent-neighbor? father]
       [set relationship 10]
     ]
   
-    ;父亲不存在，母亲存在，判断户主配偶的爷爷奶奶
+    ;seek for Grandparents of the spouse of the head of household
     if (father = nobody and mother != nobody)
     [
       ask people with [hhd = householdid and relationship = 0 and age < [age] of hhder-couple and grapa-neighbor? hhder-couple and not parent-neighbor? mother]
       [set relationship 9]
     ]
     
-    ;父母都不存在，判断配偶的爷爷奶奶外公外婆
+    
     if (father = nobody and mother = nobody)
     [
       let n1 count people with [hhd = householdid and relationship = 0 and age > [age] of hhder-couple and grapa-neighbor? hhder-couple]
       
-      if (n1 = 1)  ;只有一人，随机选择是爷爷奶奶或外公外婆
+      if (n1 = 1)  
       [
         ask people with [hhd = householdid and relationship = 0 and age > [age] of hhder-couple and grapa-neighbor? hhder-couple]
         [
@@ -51,13 +51,13 @@ to update-relationship [householdid householder]
         ]
       ]
       
-      if (n1 = 2) ;如果有两人
+      if (n1 = 2) 
       [
         let grapa1 one-of people with [hhd = householdid and relationship = 0 and age > [age] of hhder-couple and grapa-neighbor? hhder-couple]
         let grapa2 one-of people with [who != [who] of grapa1 and hhd = householdid and relationship = 0 and age > [age] of hhder-couple and grapa-neighbor? hhder-couple]
         ask grapa1
         [
-          ifelse (couple-neighbor? grapa2) ;判断两人是否是夫妻
+          ifelse (couple-neighbor? grapa2) 
           [
             let p random 2
             ifelse p = 1
@@ -71,7 +71,7 @@ to update-relationship [householdid householder]
         ]
       ]
       
-      if (n1 = 3) ;如果有三人
+      if (n1 = 3) 
       [
         let grapa1 one-of people with [hhd = householdid and relationship = 0 and age > [age] of hhder-couple and grapa-neighbor? hhder-couple and count in-couple-neighbors = 1]
         let grapa2 one-of people with [who != [who] of grapa1 and hhd = householdid and relationship = 0 and age > [age] of hhder-couple and grapa-neighbor? hhder-couple and couple-neighbor? grapa1]
@@ -90,7 +90,7 @@ to update-relationship [householdid householder]
         ]
       ]
       
-      if (n1 = 4) ;如果有四人
+      if (n1 = 4) 
       [
         let grapa1 one-of people with [hhd = householdid and relationship = 0 and age > [age] of hhder-couple and grapa-neighbor? hhder-couple]
         let grapa2 one-of people with [who != [who] of grapa1 and hhd = householdid and relationship = 0 and age > [age] of hhder-couple and grapa-neighbor? hhder-couple and couple-neighbor? grapa1]
@@ -104,49 +104,45 @@ to update-relationship [householdid householder]
     ]
   ]
   
-  ;户主的儿女
+  ;Children of the head of household
   ask people with [hhd = householdid and relationship = 0 and age < [age] of householder and parent-neighbor? householder] [set relationship 3]
   
-  ;户主的父母
+  ;Parents of head of household
   ask people with [hhd = householdid and relationship = 0 and age > [age] of householder and parent-neighbor? householder] [set relationship 4]  
 
-  ;户主的孙子孙女
+  ;Grandchildren of the head of household
   ask people with [hhd = householdid and relationship = 0 and age < [age] of householder and grapa-neighbor? householder][set relationship 6]
 
-  ;户主的父亲存在的情况下，判断户主的爷爷奶奶 （relationship = 7)
+  ;seek for grandparents of the head of household 
   let father one-of people with [hhd = householdid and relationship = 4 and gender = 1]
   if father != nobody
   [
     ask people with [hhd = householdid and relationship = 0 and age > [age] of householder and grapa-neighbor? householder and parent-neighbor? father] [set relationship 7]
   ]
 
-  ;户主的母亲存在的情况下，判断户主的外公外婆 （relationship=8）
   let mother one-of people with [hhd = householdid and relationship = 4 and gender = 0]
   if mother != nobody
   [
     ask people with [hhd = householdid and relationship = 0 and age > [age] of householder and grapa-neighbor? householder and parent-neighbor? mother] [set relationship 8]
   ]
   
-  ;父亲存在，母亲不存在，判断户主的外公外婆
   if (father != nobody and mother = nobody)
   [
     ask people with [hhd = householdid and relationship = 0 and age < [age] of householder and grapa-neighbor? householder and not parent-neighbor? father]
     [set relationship 8]
   ]
   
-  ;父亲不存在，母亲存在，判断户主的爷爷奶奶
   if (father = nobody and mother != nobody)
   [
     ask people with [hhd = householdid and relationship = 0 and age < [age] of householder and grapa-neighbor? householder and not parent-neighbor? mother]
     [set relationship 7]
   ]
   
-  ;父母都不存在，判断爷爷奶奶外公外婆
   if (father = nobody and mother = nobody)
   [
     let n1 count people with [hhd = householdid and relationship = 0 and age > [age] of householder and grapa-neighbor? householder]
     
-    if (n1 = 1)  ;只有一人，随机选择是爷爷奶奶或外公外婆
+    if (n1 = 1)  
     [
       ask people with [hhd = householdid and relationship = 0 and age > [age] of householder and grapa-neighbor? householder]
       [
@@ -155,13 +151,13 @@ to update-relationship [householdid householder]
       ]
     ]
     
-    if (n1 = 2) ;如果有两人
+    if (n1 = 2) 
     [
       let grapa1 one-of people with [hhd = householdid and relationship = 0 and age > [age] of householder and grapa-neighbor? householder]
       let grapa2 one-of people with [who != [who] of grapa1 and hhd = householdid and relationship = 0 and age > [age] of householder and grapa-neighbor? householder]
       ask grapa1
       [
-        ifelse (couple-neighbor? grapa2) ;判断两人是否是夫妻
+        ifelse (couple-neighbor? grapa2) 
         [
           let p random 2
           ifelse p = 1
@@ -175,7 +171,7 @@ to update-relationship [householdid householder]
       ]
     ]
     
-    if (n1 = 3) ;如果有三人
+    if (n1 = 3)
     [
       let grapa1 one-of people with [hhd = householdid and relationship = 0 and age > [age] of householder and grapa-neighbor? householder and count in-couple-neighbors = 1]
       let grapa2 one-of people with [who != [who] of grapa1 and hhd = householdid and relationship = 0 and age > [age] of householder and grapa-neighbor? householder and couple-neighbor? grapa1]
@@ -194,7 +190,7 @@ to update-relationship [householdid householder]
       ]
     ]
     
-    if (n1 = 4) ;如果有四人
+    if n1 = 4
     [
       let grapa1 one-of people with [hhd = householdid and relationship = 0 and age > [age] of householder and grapa-neighbor? householder]
       let grapa2 one-of people with [who != [who] of grapa1 and hhd = householdid and relationship = 0 and age > [age] of householder and grapa-neighbor? householder and couple-neighbor? grapa1]
@@ -208,18 +204,15 @@ to update-relationship [householdid householder]
   ]
 
   
-  ;户主的父母存在的情况下，判断户主的兄弟姐妹
   if (father != nobody)[ask people with [hhd = householdid and relationship = 0 and age < [age] of father and parent-neighbor? father] [set relationship 11]] 
   if (mother != nobody)[ask people with [hhd = householdid and relationship = 0 and age < [age] of mother and parent-neighbor? mother] [set relationship 11]]
   
   
-  ;儿媳或女婿（relationship=13）
   ask people with [hhd = householdid and relationship = 3]
   [
     let hw people with [couple-neighbor? myself and hhd = householdid]
     if hw != nobody [ask hw [set relationship 13]]
   ]
   
-  ;其他关系
   ask people with [hhd = householdid and relationship = 0][set relationship 12]
 end

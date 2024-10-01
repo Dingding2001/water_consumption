@@ -1,0 +1,894 @@
+to energy-consumption-model
+  ;不是户主的人，和energy相关的属性清空
+  ask people with [relationship != 1]
+  [  
+    set air []
+    set bread []
+    set induction []
+    set rice [];Rice cooker
+    set pressure [];Pressure cooker
+    set baking [];Baking pan
+    set pot []
+    set milk [];Soy milk
+    set microwave [];Microwave oven 
+    set LED []
+    set daytime-temp-air 0 ;The temperature of the air conditioner cooling setting during daytime
+    set night-temp-air 0;The temperature of the air conditioner cooling setting during night
+    set month-cool 0;Month of using air conditioner for cooling
+    set weekday-hour 0;Hour of using air conditioner for cooling on weekday
+    set weekend-hour 0;Hour of using air conditioner for cooling on weekend
+    set fre-cook 0;Frequency of cooking
+    set appliance-trigger 0
+  ]
+  
+  ;new immigrants: generate all electricity consumption attributes for them
+  ask people with [relationship = 1 and fre-cook = 0 and length LED = 0][new-immigrants set coef [coef] of one-of people with [coef != 0]]
+  
+  ;house moving 
+  ;判断搬家的人哪些东西需要保留，哪些东西会丢弃，会购买哪些新的家电
+  housemover
+  
+  ;其他家庭，首先check appliances trigger
+  other-households
+  
+  ;所有家电，age+1，并判断是否需要更换或者丢弃，更新behaviors
+  update-age-behaviors
+  
+  ;计算电耗
+ calculate-electricity
+  
+  print "energy-model finished"
+end
+
+to calculate-electricity
+  ask people with [relationship = 1]
+  [
+    ;Calculate annual electricity fee based on the behaviors and appliances
+    let electricity-fee 2188.867 + 0.210 * (length air * (daytime-temp-air * 2 + night-temp-air) * (month-cool * (weekday-hour * 5 + weekend-hour * 2))) + fre-cook * ((length bread) / 2 + (length induction) / 2 + (length milk) / 2 + (length baking) / 2 + (length pot) / 2 + (length pressure) / 2 + (length rice) / 2 + (length Rice) / 2 + (length Microwave) / 2) - item 0 LED * 288.008
+    ;Calaculate annual electricity consumed 
+    let electricity1 0
+    (ifelse
+      electricity-fee < 1440 [set electricity1 electricity-fee / 0.5]
+      electricity-fee >= 1440 and electricity-fee <= 2496 [set electricity1 2880 + (electricity-fee - 1440) / 0.55]
+      [set electricity1 4800 + (electricity-fee - 2496) / 0.8]
+    )
+    set electricity electricity1 * coef
+    set int-cool length air * (daytime-temp-air * 2 + night-temp-air) * (month-cool * (weekday-hour * 5 + weekend-hour * 2))
+    set int-cook fre-cook * ((length bread) / 2 + (length induction) / 2 + (length milk) / 2 + (length baking) / 2 + (length pot) / 2 + (length pressure) / 2 + (length rice) / 2 + (length Rice) / 2 + (length Microwave) / 2) 
+  ]
+  
+  
+  print "calculate-electricity finished"
+end
+
+to new-immigrants  
+  ;cooking-related behaviors and applicances
+  
+  let num-bread predict-bread ifelse num-bread = 0 [set bread []][if length bread = 0 [set bread (list 6 0)]]
+  let num-induction predict-induction ifelse num-induction = 0 [set induction []][if length induction = 0 [set induction (list 6 0)]]
+  let num-milk predict-milk ifelse num-milk = 0 [set milk []][if length milk = 0 [set milk (list 6 0)]]
+  let num-pot predict-pot ifelse num-pot = 0 [set pot []][if length pot = 0 [set pot (list 6 0)]]
+  let num-baking predict-baking ifelse num-baking = 0 [set baking []][if length baking = 0 [set baking (list 6 0)]]
+  let num-pressure predict-pressure ifelse num-pressure = 0 [set pressure []][if length pressure = 0 [set baking (list 8 0)]]
+  let num-rice predict-rice ifelse num-rice = 0 [set rice []][if length rice = 0 [set rice (list 10 0)]]
+  let num-microwave predict-microwave ifelse num-microwave = 0 [set microwave []][if length microwave = 0 [set microwave (list 10 0)]]
+  
+  ;predict air conditioner related bahaviors and appliances
+  let num-air predict-air ;预测这个家庭会买多少台空调（买房状态下）或者租一套会有多少台空调的房子（租房状态下）
+  while [num-air > 0] ;所需要的空调数大于0
+  [
+    ifelse count in-purchase-neighbors = 1 [set air lput (list 10 0) air] [set air lput (list 10 (random 9 + 1)) air]   ;如果是买房，就买一台新的空调；如果是租房，就生成一台随机age的空调
+    set num-air num-air - 1
+  ]
+  
+  ;LED
+  let LED-prop predict-LED 
+  ifelse count in-purchase-neighbors = 1 [set LED (list LED-prop 6 0)] [set LED (list LED-prop 6 (random 5 + 1))]
+  
+  set appliance-trigger 0
+end
+
+to housemover
+  ask people with [relationship = 1 and fre-cook = 0] ;需要在residence model里面把所有在今年搬家的agent的cooking-fre改成0
+  [
+    ;更新appliances
+    ;air conditioner
+    let num-air-needed predict-air ;预测需要多少台空调
+    ifelse num-air-needed >= length air ;如果所需空调数>=已有空调数
+    [
+      let num-air-needed1 (num-air-needed - length air)
+      while [num-air-needed1 > 0][ifelse count in-purchase-neighbors = 1 [set air lput (list 10 0) air][set air lput (list 10 random 10) air] set num-air-needed1 num-air-needed1 - 1]
+    ]
+    [
+      let num-air-drop (length air - num-air-needed)
+      while [num-air-drop > 0][let n (length air - 1) set air remove-item n air set num-air-drop num-air-drop - 1]
+    ]
+    
+    ;cooking appliances
+    ;bread machine
+    let num-bread-needed predict-bread
+    if num-bread-needed = 0 and length bread = 1 [set bread []]
+    if num-bread-needed = 1 and length bread = 0 [set bread list 6 0]
+    ;induction
+    let num-induction-needed predict-induction
+    if num-induction-needed = 0 and length induction = 1 [set induction []]
+    if num-induction-needed = 1 and length induction = 0 [set induction list 6 0]
+    ;soy milk
+    let num-milk-needed predict-milk
+    if num-milk-needed = 0 and length milk = 1 [set milk []]
+    if num-milk-needed = 1 and length milk = 0 [set milk list 6 0]
+    ;pot
+    let num-pot-needed predict-pot
+    if num-pot-needed = 0 and length pot = 1 [set pot []]
+    if num-pot-needed = 1 and length pot = 0 [set pot list 6 0]
+    ;baking
+    let num-baking-needed predict-baking
+    if num-baking-needed = 0 and length baking = 1 [set baking []]
+    if num-baking-needed = 1 and length baking = 0 [set baking list 6 0]
+    ;pressure
+    let num-pressure-needed predict-pressure
+    if num-pressure-needed = 0 and length pressure = 1 [set pressure []]
+    if num-pressure-needed = 1 and length pressure = 0 [set pressure list 8 0]
+    ;rice cooker
+    let num-rice-needed predict-rice
+    if num-rice-needed = 0 and length rice = 1 [set rice []]
+    if num-rice-needed = 1 and length rice = 0 [set rice list 10 0]
+    ;microwave
+    let num-microwave-needed predict-microwave
+    if num-microwave-needed = 0 and length microwave = 1 [set microwave []]
+    if num-microwave-needed = 1 and length microwave = 0 [set microwave list 10 0]
+    
+    ;LED
+    let LED-needed predict-LED
+    ifelse count in-rent-neighbors = 1 [set LED (list led-needed 6 random 6)][set LED (list led-needed 6 0)]
+    
+    ;更新behaviors
+    set fre-cook predict-fre-cook
+    set weekday-hour predict-cool-hr-weekday
+    set weekend-hour predict-cool-hr-weekend
+    set daytime-temp-air predict-daytime-temp-air
+    set night-temp-air predict-night-temp-air
+    
+    set appliance-trigger 0
+  ]
+  print "housemover finished"
+end
+
+to other-households
+  ask people with [relationship = 1]
+  [
+    let trigger-threshold 5
+    if appliance-trigger >= trigger-threshold
+    [
+      ;air conditioner
+      if count in-purchase-neighbors = 1
+      [
+        let num-air-needed predict-air
+        if num-air-needed > length air
+        [
+          let num-air-needed1 (num-air-needed - length air)
+          while [num-air-needed1 > 0][set air lput (list 10 0) air set num-air-needed1 num-air-needed1 - 1]
+        ]
+      ]
+      
+      ;cooking appliances
+      if length bread = 0 [let num-bread-needed predict-bread if num-bread-needed = 1 [set bread list 6 0]]
+      if length induction = 0 [let num-induction-needed predict-induction if num-induction-needed = 1 [set induction list 6 0]]
+      if length milk = 0 [let num-milk-needed predict-milk if num-milk-needed = 1 [set milk list 6 0]]
+      if length pot = 0 [let num-pot-needed predict-pot if num-pot-needed = 1 [set pot list 6 0]]
+      if length baking = 0 [let num-baking-needed predict-baking if num-baking-needed = 1 [set baking list 6 0]]
+      if length pressure = 0 [let num-pressure-needed predict-pressure if num-pressure-needed = 1 [set pressure list 8 0]]
+      if length rice = 0 [let num-rice-needed predict-rice if num-rice-needed = 1 [set rice list 10 0]]
+      if length microwave = 0 [let num-microwave-needed predict-microwave if num-microwave-needed = 1 [set microwave list 10 0]]
+      
+      ;LED
+      let prop-LED predict-LED
+      if item 0 LED != prop-LED [set LED (list prop-LED 6 0)]
+      
+      set appliance-trigger 0
+    ]
+  ]
+  
+  print "other households finished"
+end
+
+
+
+
+
+to update-age-behaviors
+  ;Check the lifespan and age of appliances and predict whether
+  
+  ;air conditioner
+  let min-range min [hhd] of people
+  let max-range min-range + 100
+  let max-id max [hhd] of people
+  while [min-range <= max-id]
+  [
+    ask people with [hhd >= min-range and hhd < max-range and relationship = 1]
+    [
+      print min-range
+      let num-air length air
+      while [num-air > 0]
+      [
+        let A1 item (num-air - 1) air
+        let lifespan1 item 0 A1 let age1 item 1 A1
+        set age1 age1 + 1
+        
+        ifelse lifespan1 = A1 
+        [
+          ;if the air conditioner is at the end of usage
+          ifelse count in-rent-neighbors = 1 
+          [
+            ;This family's house is rented, and the landlord will replace it with a new air conditioner.
+            set air replace-item (num-air - 1) air (list lifespan1 1)
+          ] 
+          [
+            let num-AC-needed 0
+            ;This family's house is bought. First predict the number of air conditioners this family needs at this time.
+            set num-AC-needed predict-air
+            ifelse num-AC-needed < length air 
+            [set air remove-item (num-air - 1) air] ;if the number of air conditioners needed is less than the household has, it will not purchase a new one
+            [set air replace-item (num-air - 1) air (list lifespan1 1)] ;if the number of air conditioners needed is not less than the household has, it will purchase a new one
+          ]
+       ]
+       [
+          ;update the age of the air conditioner
+          set air replace-item (num-air - 1) air (list lifespan1 age1)
+        ]
+        set num-air num-air - 1 
+      ]
+    
+    ;AC related behaviors
+
+    set month-cool predict-month-cool
+    set weekday-hour predict-cool-hr-weekday
+    set weekend-hour predict-cool-hr-weekend
+    set daytime-temp-air predict-daytime-temp-air
+    set night-temp-air predict-night-temp-air
+    
+    
+    ;cooking frequency
+    set fre-cook predict-fre-cook
+    
+    ;bread machine
+    if length bread > 0
+    [
+      let lifespan1 item 0 bread let age1 item 1 bread
+      set age1 age1 + 1
+      ifelse lifespan1 = age1
+      [
+        let num-bread-needed predict-bread
+        ifelse num-bread-needed = 1 [set bread replace-item 1 bread 0][set bread []]
+      ]
+      [
+        set bread replace-item 1 bread age1
+      ]
+    ]
+    
+    ;induction
+    if length induction > 0
+    [
+      let lifespan1 item 0 induction let age1 item 1 induction
+      set age1 age1 + 1
+      ifelse lifespan1 = age1
+      [
+        let num-induction-needed predict-induction
+        ifelse num-induction-needed = 1 [set induction replace-item 1 induction 0][set induction []]
+      ]
+      [
+        set induction replace-item 1 induction age1
+      ]
+    ]
+    
+    ;rice
+    if length rice > 0
+    [
+      let lifespan1 item 0 rice let age1 item 1 rice
+      set age1 age1 + 1
+      ifelse lifespan1 = age1
+      [
+        let num-rice-needed predict-rice
+        ifelse num-rice-needed = 1 [set rice replace-item 1 rice 0][set rice []]
+      ]
+      [
+        set rice replace-item 1 rice age1
+      ]
+    ]
+    
+    ;pressure
+    if length pressure > 0
+    [
+      let lifespan1 item 0 pressure let age1 item 1 pressure
+      set age1 age1 + 1
+      ifelse lifespan1 = age1
+      [
+        let num-pressure-needed predict-pressure
+        ifelse num-pressure-needed = 1 [set pressure replace-item 1 pressure 0][set pressure []]
+      ]
+      [
+        set pressure replace-item 1 pressure age1
+      ]
+    ]
+    
+    ;baking
+    if length baking > 0
+    [
+      let lifespan1 item 0 baking let age1 item 1 baking
+      set age1 age1 + 1
+      ifelse lifespan1 = age1
+      [
+        let num-baking-needed predict-baking
+        ifelse num-baking-needed = 1 [set baking replace-item 1 baking 0][set baking []]
+      ]
+      [
+        set baking replace-item 1 baking age1
+      ]
+    ]
+    
+    ;pot
+    if length pot > 0
+    [
+      let lifespan1 item 0 pot let age1 item 1 pot
+      set age1 age1 + 1
+      ifelse lifespan1 = age1
+      [
+        let num-pot-needed predict-pot
+        ifelse num-pot-needed = 1 [set pot replace-item 1 pot 0][set pot []]
+      ]
+      [
+        set pot replace-item 1 pot age1
+      ]
+    ]
+    
+    ;milk
+    if length milk > 0
+    [
+      let lifespan1 item 0 milk let age1 item 1 milk
+      set age1 age1 + 1
+      ifelse lifespan1 = age1
+      [
+        let num-milk-needed predict-milk
+        ifelse num-milk-needed = 1 [set milk replace-item 1 milk 0][set milk []]
+      ]
+      [
+        set milk replace-item 1 milk age1 
+      ]
+    ]
+    
+    ;microwave
+    if length microwave > 0
+    [
+      let lifespan1 item 0 microwave let age1 item 1 microwave
+      set age1 age1 + 1
+      ifelse lifespan1 = age1
+      [
+        let num-microwave-needed predict-microwave
+        ifelse num-microwave-needed = 1 [set microwave replace-item 1 microwave 0][set microwave []]
+      ]
+      [
+        set microwave replace-item 1 microwave age1 
+      ]
+    ]
+    
+    ;LED
+    let lifespan1 item 1 LED let age1 item 2 LED
+    set age1 age1 + 1
+    ifelse lifespan1 = age1
+    [
+      let prop-LED predict-LED
+      set LED (list prop-LED 6 0)
+    ]
+    [
+      set LED replace-item 2 LED age1
+    ]
+  set min-range min-range + 100
+  set max-range max-range + 100
+  ]
+  ]
+  
+  print "update-age-behaviors finished"
+end
+
+to-report predict-air
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  let house_ownership 0
+  if count in-purchase-neighbors = 1 [set house_ownership 1]
+  py:set "house_ownership" house_ownership
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_csv('EnergyConsumption/air.csv')"
+    "features = name1_data[['gender', 'age', 'income', 'education', 'Status','Num_family', 'Num_child', 'Num_old','Household_income', 'House_ownership']]"
+    "second_level_labels = name1_data[['Num_cooling_AC']]"
+    "rf_second_level = RandomForestClassifier(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income, house_ownership]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"     
+  )
+  let num_AC py:runresult "Y"
+  report item 0 num_AC
+end
+
+to-report predict-bread
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  let house_ownership 0
+  if count in-purchase-neighbors = 1 [set house_ownership 1]
+  py:set "house_ownership" house_ownership
+  py:set "cooking_fre" fre-cook
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_csv('EnergyConsumption/bread.csv')"
+    "features = name1_data[['gender', 'age', 'income', 'education', 'Status','Num_family', 'Num_child', 'Num_old','Household_income', 'House_ownership', 'Cooking_fre']]"
+    "second_level_labels = name1_data[['Bread_machine']]"
+    "rf_second_level = RandomForestClassifier(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"     
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income, house_ownership, cooking_fre]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"     
+  )
+  let num_bread py:runresult "Y"
+  report item 0 num_bread
+end
+
+to-report predict-induction
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  let house_ownership 0
+  if count in-purchase-neighbors = 1 [set house_ownership 1]
+  py:set "house_ownership" house_ownership
+  py:set "cooking_fre" fre-cook
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_csv('EnergyConsumption/induction.csv')"
+    "features = name1_data[['gender', 'age', 'income', 'education', 'Status','Num_family', 'Num_child', 'Num_old','Household_income', 'House_ownership', 'Cooking_fre']]"
+    "second_level_labels = name1_data[['Induction_cooker']]"
+    "rf_second_level = RandomForestClassifier(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"     
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income, house_ownership, cooking_fre]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"     
+  )
+  let num_induction py:runresult "Y"
+  report item 0 num_induction
+end
+
+to-report predict-milk
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  let house_ownership 0
+  if count in-purchase-neighbors = 1 [set house_ownership 1]
+  py:set "house_ownership" house_ownership
+  py:set "cooking_fre" fre-cook
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_csv('EnergyConsumption/milk.csv')"
+    "features = name1_data[['gender', 'age', 'income', 'education', 'Status','Num_family', 'Num_child', 'Num_old','Household_income', 'House_ownership', 'Cooking_fre']]"
+    "second_level_labels = name1_data[['Soymilk']]"
+    "rf_second_level = RandomForestClassifier(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"     
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income, house_ownership, cooking_fre]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"     
+  )
+  let num_milk py:runresult "Y"
+  report item 0 num_milk
+end
+
+to-report predict-pot
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  let house_ownership 0
+  if count in-purchase-neighbors = 1 [set house_ownership 1]
+  py:set "house_ownership" house_ownership
+  py:set "cooking_fre" fre-cook
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_csv('EnergyConsumption/pot.csv')"
+    "features = name1_data[['gender', 'age', 'income', 'education', 'Status','Num_family', 'Num_child', 'Num_old','Household_income', 'House_ownership', 'Cooking_fre']]"
+    "second_level_labels = name1_data[['Pot']]"
+    "rf_second_level = RandomForestClassifier(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"     
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income, house_ownership, cooking_fre]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"     
+  )
+  let num_pot py:runresult "Y"
+  report item 0 num_pot
+end
+
+to-report predict-baking
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  let house_ownership 0
+  if count in-purchase-neighbors = 1 [set house_ownership 1]
+  py:set "house_ownership" house_ownership
+  py:set "cooking_fre" fre-cook
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_csv('EnergyConsumption/baking.csv')"
+    "features = name1_data[['gender', 'age', 'income', 'education', 'Status','Num_family', 'Num_child', 'Num_old','Household_income', 'House_ownership', 'Cooking_fre']]"
+    "second_level_labels = name1_data[['Electric_baking_pan']]"
+    "rf_second_level = RandomForestClassifier(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"     
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income, house_ownership, cooking_fre]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"     
+  )
+  let num_baking py:runresult "Y"
+  report item 0 num_baking
+end
+
+to-report predict-pressure
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  let house_ownership 0
+  if count in-purchase-neighbors = 1 [set house_ownership 1]
+  py:set "house_ownership" house_ownership
+  py:set "cooking_fre" fre-cook
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_csv('EnergyConsumption/pressure.csv')"
+    "features = name1_data[['gender', 'age', 'income', 'education', 'Status','Num_family', 'Num_child', 'Num_old','Household_income', 'House_ownership', 'Cooking_fre']]"
+    "second_level_labels = name1_data[['Pressure_cooker']]"
+    "rf_second_level = RandomForestClassifier(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"     
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income, house_ownership, cooking_fre]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"     
+  )
+  let num_pressure py:runresult "Y"
+  report item 0 num_pressure
+end
+
+to-report predict-rice
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  let house_ownership 0
+  if count in-purchase-neighbors = 1 [set house_ownership 1]
+  py:set "house_ownership" house_ownership
+  py:set "cooking_fre" fre-cook
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_csv('EnergyConsumption/rice.csv')"
+    "features = name1_data[['gender', 'age', 'income', 'education', 'Status','Num_family', 'Num_child', 'Num_old','Household_income', 'House_ownership', 'Cooking_fre']]"
+    "second_level_labels = name1_data[['rice_cooker']]"
+    "rf_second_level = RandomForestClassifier(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"    
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income, house_ownership, cooking_fre]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"     
+  )
+  let num_rice py:runresult "Y"
+  report item 0 num_rice
+end
+
+to-report predict-microwave
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  let house_ownership 0
+  if count in-purchase-neighbors = 1 [set house_ownership 1]
+  py:set "house_ownership" house_ownership
+  py:set "cooking_fre" fre-cook
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_csv('EnergyConsumption/microwave.csv')"
+    "features = name1_data[['gender', 'age', 'income', 'education', 'Status','Num_family', 'Num_child', 'Num_old','Household_income', 'House_ownership', 'Cooking_fre']]"
+    "second_level_labels = name1_data[['Microwave_oven']]"
+    "rf_second_level = RandomForestClassifier(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income, house_ownership, cooking_fre]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"
+  )
+  let num_microwave py:runresult "Y"
+  report item 0 num_microwave
+end
+
+to-report predict-month-cool
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  let house_ownership 0
+  if count in-purchase-neighbors = 1 [set house_ownership 1]
+  py:set "house_ownership" house_ownership
+  py:set "air" length air
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_csv('EnergyConsumption/month_cool.csv')"
+    "features = name1_data[['gender', 'age', 'income', 'education', 'Status','Num_family', 'Num_child', 'Num_old','Household_income', 'House_ownership', 'Num_cooling_AC']]"
+    "second_level_labels = name1_data[['Num_month_cooling']]"
+    "rf_second_level = RandomForestClassifier(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income, house_ownership, air]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"     
+  )
+  let num_month py:runresult "Y"
+  report item 0 num_month
+end
+
+to-report predict-Cool-hr-weekday
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  let house_ownership 0
+  if count in-purchase-neighbors = 1 [set house_ownership 1]
+  py:set "house_ownership" house_ownership
+  py:set "air" length air
+  py:set "Num_month_cooling" month-cool
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_csv('EnergyConsumption/hr_weekday.csv')"
+    "features = name1_data[['gender', 'age', 'income', 'education', 'Status','Num_family', 'Num_child', 'Num_old','Household_income', 'House_ownership', 'Num_cooling_AC', 'Num_month_cooling']]"
+    "second_level_labels = name1_data[['Cool_hr_weekday']]"
+    "rf_second_level = RandomForestRegressor(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income, house_ownership, air, Num_month_cooling]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"    
+  )
+  let hr_weekday py:runresult "Y"
+  report item 0 hr_weekday
+end
+
+to-report predict-cool-hr-weekend
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  let house_ownership 0
+  if count in-purchase-neighbors = 1 [set house_ownership 1]
+  py:set "house_ownership" house_ownership
+  py:set "air" length air
+  py:set "Num_month_cooling" month-cool
+  py:set "Cool_hr_weekday" weekday-hour
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_csv('EnergyConsumption/hr_weekend.csv')"
+    "features = name1_data[['gender', 'age', 'income', 'education', 'Status','Num_family', 'Num_child', 'Num_old','Household_income', 'House_ownership', 'Num_cooling_AC', 'Num_month_cooling', 'Cool_hr_weekday']]"
+    "second_level_labels = name1_data[['Cool_hr_weekend']]"
+    "rf_second_level = RandomForestRegressor(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income, house_ownership, air, Num_month_cooling, Cool_hr_weekday]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"     
+  )
+  let hr_weekend py:runresult "Y"
+  report item 0 hr_weekend
+end
+
+to-report predict-daytime-temp-air
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  let house_ownership 0
+  if count in-purchase-neighbors = 1 [set house_ownership 1]
+  py:set "house_ownership" house_ownership
+  py:set "air" length air
+  py:set "Num_month_cooling" month-cool
+  py:set "Cool_hr_weekday" weekday-hour
+  py:set "Cool_hr_weekend" weekend-hour
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_csv('EnergyConsumption/daytime-temp-air.csv')"
+    "features = name1_data[['gender', 'age', 'income', 'education', 'Status','Num_family', 'Num_child', 'Num_old','Household_income', 'House_ownership', 'Num_cooling_AC', 'Num_month_cooling', 'Cool_hr_weekday', 'Cool_hr_weekend']]"
+    "second_level_labels = name1_data[['Temp_summer_day']]"
+    "rf_second_level = RandomForestClassifier(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income, house_ownership, air, Num_month_cooling, Cool_hr_weekday, Cool_hr_weekend]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"     
+  )
+  let Temp_day py:runresult "Y"
+  report item 0 Temp_day
+end
+
+to-report predict-night-temp-air
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  let house_ownership 0
+  if count in-purchase-neighbors = 1 [set house_ownership 1]
+  py:set "house_ownership" house_ownership
+  py:set "air" length air
+  py:set "Num_month_cooling" month-cool
+  py:set "Cool_hr_weekday" weekday-hour
+  py:set "Cool_hr_weekend" weekend-hour
+  py:set "daytime_temp_air" daytime-temp-air
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_csv('EnergyConsumption/night-temp-air.csv')"
+    "features = name1_data[['gender', 'age', 'income', 'education', 'Status','Num_family', 'Num_child', 'Num_old','Household_income', 'House_ownership', 'Num_cooling_AC', 'Num_month_cooling', 'Cool_hr_weekday', 'Cool_hr_weekend', 'Temp_summer_day']]"
+    "second_level_labels = name1_data[['Temp_summer_night']]"
+    "rf_second_level = RandomForestClassifier(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income, house_ownership, air, Num_month_cooling, Cool_hr_weekday, Cool_hr_weekend, daytime_temp_air]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"     
+  )
+  let Temp_night py:runresult "Y"
+  report item 0 Temp_night
+end
+
+to-report predict-fre-cook
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  let house_ownership 0
+  if count in-purchase-neighbors = 1 [set house_ownership 1]
+  py:set "house_ownership" house_ownership
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_csv('EnergyConsumption/fre-cooking.csv')"
+    "features = name1_data[['gender', 'age', 'income', 'education', 'Status','Num_family', 'Num_child', 'Num_old','Household_income', 'House_ownership']]"
+    "second_level_labels = name1_data[['Cooking_fre']]"
+    "rf_second_level = RandomForestClassifier(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"  
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income, house_ownership]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"     
+  )
+  let fre_cooking1 py:runresult "Y"
+  report item 0 fre_cooking1
+end
+
+to-report predict-LED
+  py:set "gender" gender
+  py:set "age" age-group
+  py:Set "education" education-level
+  py:Set "income" income-group
+  py:set "status" status
+  py:Set "num_family" number
+  py:set "num_child" count people with [hhd = [hhd] of myself and age < 18]
+  py:set "num_old" count people with [hhd = [hhd] of myself and status = 4]
+  py:set "household_income" hhd-income-group
+  let house_ownership 0
+  if count in-purchase-neighbors = 1 [set house_ownership 1]
+  py:set "house_ownership" house_ownership
+  (py:run
+    "import numpy as np"
+    "from sklearn.ensemble import RandomForestClassifier"
+    "seeds = 1"
+    "trees = 100"
+    "name1_data = pd.read_csv('EnergyConsumption/LED.csv')"
+    "features = name1_data[['gender', 'age', 'income', 'education', 'Status','Num_family', 'Num_child', 'Num_old','Household_income', 'House_ownership']]"
+    "second_level_labels = name1_data[['LED']]"
+    "rf_second_level = RandomForestClassifier(n_estimators=trees, random_state=seeds)"
+    "rf_second_level.fit(features, second_level_labels.values.ravel())"    
+    "new_data = pd.DataFrame([[gender, age, income, education, status, num_family, num_child, num_old, household_income, house_ownership]],columns=features.columns)"
+    "Y = rf_second_level.predict(new_data)"     
+  )
+  let LED1 py:runresult "Y"
+  report item 0 LED1
+end

@@ -26,6 +26,7 @@ Shops-own
   location-choice ;whether need to choose a location
   staff ;number of staff required
   Traffic ;traffic of shops
+  district
 ]
 
 csrents-own
@@ -125,6 +126,7 @@ end
 to shop-location-choice
   let i 1
   let max-num-CBs 5 
+  print (word "number of shops relocate:" count shops with [location-choice = 1])
   while [i <= 5] ;5 times negotiation
   [
     set i i + 1
@@ -174,7 +176,7 @@ to shop-location-choice
         ]
         attractiveness < T-CB-decrease
         [
-          set srent srent + R-decrease * (T-CB-decrease - attractiveness) * srent
+          set srent srent + R-decrease * (attractiveness - T-CB-decrease) * srent
           if srent < srent-min [set srent Srent-min]
           
           ;update its utility, because of rent change
