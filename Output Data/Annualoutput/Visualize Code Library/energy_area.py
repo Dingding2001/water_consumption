@@ -169,7 +169,7 @@ for i, (shp_file, gdf) in enumerate(zip(shp_files, gdf_list)):
     plt.title(title, fontsize=TitleSize, fontname='times new roman', fontweight='bold')
 
     output_file_path = os.path.join(folder_name, 'Geometrically Spaced', f"{os.path.splitext(shp_file)[0]}.png")
-    plt.savefig(output_file_path, dpi=30, bbox_inches='tight')
+    plt.savefig(output_file_path, dpi=100, bbox_inches='tight')
     plt.close()
 
     # 等值划分
@@ -196,7 +196,7 @@ for i, (shp_file, gdf) in enumerate(zip(shp_files, gdf_list)):
     plt.title(title, fontsize=TitleSize, fontname='times new roman', fontweight='bold')
 
     output_file_path = os.path.join(folder_name, 'Equal Value', f"{os.path.splitext(shp_file)[0]}.png")
-    plt.savefig(output_file_path, dpi=30, bbox_inches='tight')
+    plt.savefig(output_file_path, dpi=100, bbox_inches='tight')
     plt.close()
 
 print("")

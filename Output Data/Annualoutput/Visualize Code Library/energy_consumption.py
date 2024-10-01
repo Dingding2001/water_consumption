@@ -23,11 +23,11 @@ from Base_Map import base_map_path as other_base_map_path
 years = list(range(2010, 2054))
 output_folder = os.path.join(os.getcwd(), "csv街道图中转")
 os.makedirs(output_folder, exist_ok=True)
-TitleSize = 140
+TitleSize = 60
 base_map_path = other_base_map_path
 
 current_time = datetime.now()
-plt.rcParams['font.sans-serif'] = 'Times New Roman'  # 字体现在是中易黑体
+plt.rcParams['font.sans-serif'] = 'SimHei'  # 字体现在是中易黑体
 plt.rcParams['font.weight'] = 'bold'  # 加粗
 plt.rcParams['font.size'] = 40  # 总局字体大小，后面有单独标题大小
 
@@ -42,7 +42,7 @@ for year in years:
         print(f"")
 
 # folder_name = "shp_Result_output_time_" + current_time.strftime("%Y-%m-%d-%H-%M-%S")
-folder_name = "Energy density result"
+folder_name = "Energy result"
 
 if not os.path.exists(os.path.join(folder_name, "Geometrically Spaced")):
     os.makedirs(os.path.join(folder_name, "Geometrically Spaced"))
@@ -66,7 +66,7 @@ energy_consumption = {}
 
 years = list(range(2010, 2054))
 
-output_folder = os.path.join(os.getcwd(), "EnergyDensity街道图中转")
+output_folder = os.path.join(os.getcwd(), "Energy街道图中转")
 os.makedirs(output_folder, exist_ok=True)
 
 for year in years:
@@ -89,8 +89,8 @@ for year in years:
     else:
         print()
 
-input_folder = "EnergyDensity街道图中转"
-output_folder = "EnergyDensity街道图中转/第一步图像相交结果"
+input_folder = "Energy街道图中转"
+output_folder = "Energy街道图中转/第一步图像相交结果"
 
 os.makedirs(output_folder, exist_ok=True)
 
@@ -134,7 +134,7 @@ for filename in os.listdir(input_folder):
 
 print("所有文件处理完成。")
 
-shp_folder = "EnergyDensity街道图中转\第一步图像相交结果"
+shp_folder = "Energy街道图中转\第一步图像相交结果"
 gdf_list = []
 
 shp_files = [f for f in os.listdir(shp_folder) if f.endswith('.shp')]
@@ -179,10 +179,10 @@ for i, (shp_file, gdf) in enumerate(zip(shp_files, gdf_list)):
 
     # 显示图例
     ax.legend(title="Electricity Consumption\nUnit: kWh", loc='upper right', fontsize=35)
-    plt.title(title, fontsize=TitleSize, fontname='Times New Roman', fontweight='bold')
+    plt.title(title, fontsize=TitleSize, fontname='SimHei', fontweight='bold')
 
     output_file_path = os.path.join(folder_name, 'Geometrically Spaced', f"{os.path.splitext(shp_file)[0]}.png")
-    plt.savefig(output_file_path, dpi=30, bbox_inches='tight')
+    plt.savefig(output_file_path, dpi=300, bbox_inches='tight')
     plt.close()
 
 # 等值划分
@@ -209,10 +209,10 @@ for i, (shp_file, gdf) in enumerate(zip(shp_files, gdf_list)):
                         label=f'{int(Energy_range_all_years[j])}-{int(Energy_range_all_years[j + 1])}')
 
     ax.legend(title="Electricity Consumption\nUnit: kWh", loc='upper right', fontsize=35)
-    plt.title(title, fontsize=TitleSize, fontname='Times New Roman', fontweight='bold')
+    plt.title(title, fontsize=TitleSize, fontname='SimHei', fontweight='bold')
 
     output_file_path = os.path.join(folder_name, 'Equal Value', f"{os.path.splitext(shp_file)[0]}.png")
-    plt.savefig(output_file_path, dpi=30, bbox_inches='tight')
+    plt.savefig(output_file_path, dpi=300, bbox_inches='tight')
     plt.close()
 
 print("")
