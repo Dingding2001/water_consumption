@@ -1,289 +1,286 @@
 to marriage-model
-  let num-marriage 0
-  (ifelse 
-    year = 2021 [set num-marriage round (item 0 Nmarr / 1000)]
-    year = 2022 [set num-marriage round (item 1 Nmarr / 1000)]
-    year = 2023 [set num-marriage round (item 2 Nmarr / 1000)]
-    year = 2024 [set num-marriage round (item 3 Nmarr / 1000)]
-    year = 2025 [set num-marriage round (item 4 Nmarr / 1000)]
-    year = 2026 [set num-marriage round (item 5 Nmarr / 1000)]
-    year = 2027 [set num-marriage round (item 6 Nmarr / 1000)]
-    year = 2028 [set num-marriage round (item 7 Nmarr / 1000)]
-    year = 2029 [set num-marriage round (item 8 Nmarr / 1000)]
-    year = 2030 [set num-marriage round (item 9 Nmarr / 1000)]
-    year = 2031 [set num-marriage round (item 10 Nmarr / 1000)]
-    [set num-marriage round (item 11 Nmarr / 1000)]
-  )
-  set num-marriage num-marriage * 2
-  let i1 int (num-marriage * 0.95)  ; i1代表在今年结婚的40岁以内的人
-  let i2 int num-marriage - i1 ;i2代表在在今年结婚的40岁以上的人  
-  
-  ;选择结婚的people
-  while [i2 + i1 >= 0]
+  ;Determine the number of marriages in the simulated year
+  let num-marriage round (item (year - 2019) Nmarr / 1000) * 2
+  let i1 int (num-marriage * 0.95)  ;Calculate the number of people under 40 who got married this year
+  let i2 int num-marriage - i1 ; Calculate the number of people above 40 who got married this year
+  determine-marriage-people i1 i2
+  get-married
+  print "marriage model finished"
+end
+
+to determine-marriage-people [num1 num2]
+  while [num2 + num1 >= 0]
   [
-    if (i1 > 0 and i2 > 0)
+    ;Two age groups are needed
+    if (num1 > 0 and num2 > 0)
     [
-      ;随机选取一个人成为新娘
+      ;Randomly select an unmarried woman of appropriate age as the bride
       let bride nobody
       ifelse social-network
       [set bride one-of people with [gender = 0 and age >= 20 and count in-couple-neighbors = 0 and count in-friend-neighbors with [gender = 1 and age >= 20 and age - [age] of myself <= 10 and age - [age] of myself >= -10 and count in-couple-neighbors = 0 and hhd != [hhd] of myself] > 0]]
       [set bride one-of people with [gender = 0 and age >= 20 and count in-couple-neighbors = 0]]
       
       
-      ;从新娘的朋友中选取一个人作为新郎
+      ;Choose a unmarried male of appropriate age from the bride's friends (if social network model exists) or a Unmarried male of appropriate age as the groom 
       if bride != nobody
       [
-        let brideboom nobody
+        let bridegroom nobody
         ifelse social-network
-        [set brideboom one-of people with [gender = 1 and age >= 20 and age - [age] of bride <= 10 and age - [age] of bride >= -10 and count in-couple-neighbors = 0 and hhd != [hhd] of bride and friend-neighbor? bride]]
-        [set brideboom one-of people with [gender = 1 and age >= 20 and age - [age] of bride <= 10 and age - [age] of bride >= -10 and count in-couple-neighbors = 0 and hhd != [hhd] of bride]]
+        [set bridegroom one-of people with [gender = 1 and age >= 20 and age - [age] of bride <= 10 and age - [age] of bride >= -10 and count in-couple-neighbors = 0 and hhd != [hhd] of bride and friend-neighbor? bride]]
+        [set bridegroom one-of people with [gender = 1 and age >= 20 and age - [age] of bride <= 10 and age - [age] of bride >= -10 and count in-couple-neighbors = 0 and hhd != [hhd] of bride]]
         
-        if (brideboom != nobody) 
+        if (bridegroom != nobody) 
         [
-          ;新娘和新郎都不等于nobody，代表成功找到了一对结婚的对象，可以更新结婚人数了
-          ifelse ([age] of bride <= 39) [set i1 i1 - 1] [set i2 i2 - 1]
-          ifelse ([age] of bride >= 40) [set i1 i1 - 1] [set i2 i2 - 1]
+          ;Successfully found a new couple and updated the required number of people
+          ifelse ([age] of bride <= 39) [set num1 num1 - 1] [set num2 num2 - 1]
+          ifelse ([age] of bride >= 40) [set num1 num1 - 1] [set num2 num2 - 1]
           ask bride [set color pink]
-          ask brideboom [set color white]
+          ask bridegroom [set color blue]
           ask bride 
           [
-            create-couple-with brideboom  ;连上夫妻线
-            ask my-friends with [other-end = brideboom] [die] ;朋友线断开
+            create-couple-with bridegroom  ;create couple link
+            ask my-friends with [other-end = bridegroom] [die] ;break the friend link
           ]
         ]
       ]
     ]
     
-    if (i1 > 0 and i2 <= 0) 
+    ;only need people below 40 years old
+    if (num1 > 0 and num2 <= 0) 
     [
-      ;随机选取一个人成为新娘
+      ;Randomly select an unmarried woman of appropriate age as the bride
       let bride nobody
       ifelse social-network
       [set bride one-of people with [gender = 0 and age >= 20 and age <= 39 and count in-couple-neighbors = 0 and count in-friend-neighbors with [gender = 1 and age >= 20 and age - [age] of myself <= 10 and age - [age] of myself >= -10 and count in-couple-neighbors = 0 and hhd != [hhd] of myself] > 0]]
       [set bride one-of people with [gender = 0 and age >= 20 and age <= 39 and count in-couple-neighbors = 0]]
       
-      ;从新娘的朋友中选取一个人作为新郎
       if bride != nobody
       [
-        let brideboom nobody
+        let bridegroom nobody
         ifelse social-network
-        [set brideboom one-of people with [gender = 1 and age >= 20 and age - [age] of bride <= 10 and age - [age] of bride >= -10 and count in-couple-neighbors = 0 and hhd != [hhd] of bride and friend-neighbor? bride]]
-        [set brideboom one-of people with [gender = 1 and age >= 20 and age - [age] of bride <= 10 and age - [age] of bride >= -10 and count in-couple-neighbors = 0 and hhd != [hhd] of bride]]
-        if (brideboom != nobody) 
+        [set bridegroom one-of people with [gender = 1 and age >= 20 and age - [age] of bride <= 10 and age - [age] of bride >= -10 and count in-couple-neighbors = 0 and hhd != [hhd] of bride and friend-neighbor? bride]]
+        [set bridegroom one-of people with [gender = 1 and age >= 20 and age - [age] of bride <= 10 and age - [age] of bride >= -10 and count in-couple-neighbors = 0 and hhd != [hhd] of bride]]
+        if (bridegroom != nobody) 
         [
-          ;新娘和新郎都不等于nobody，代表成功找到了一对结婚的对象，可以更新结婚人数了
-          ifelse ([age] of bride <= 39) [set i1 i1 - 1] [set i2 i2 - 1]
-          ifelse ([age] of bride >= 40) [set i1 i1 - 1] [set i2 i2 - 1]
+          ifelse ([age] of bride <= 39) [set num1 num1 - 1] [set num2 num2 - 1]
+          ifelse ([age] of bride >= 40) [set num1 num1 - 1] [set num2 num2 - 1]
           ask bride [set color pink]
-          ask brideboom [set color white]
+          ask bridegroom [set color blue]
           ask bride 
           [
-            create-couple-with brideboom  ;连上夫妻线
-            ask my-friends with [other-end = brideboom] [die] ;朋友线断开
+            create-couple-with bridegroom 
+            ask my-friends with [other-end = bridegroom] [die] 
           ]
         ]
       ]
     ]
     
-    if (i1 <= 0 and i2 > 0)
+    ;only need people above 40 years old
+    if (num1 <= 0 and num2 > 0)
     [
-      ;随机选取一个人成为新娘
       let bride one-of people with [gender = 0 and age >= 40 and count in-couple-neighbors = 0 and count in-friend-neighbors with [gender = 1 and age >= 20 and age - [age] of myself <= 10 and age - [age] of myself >= -10 and count in-couple-neighbors = 0 and hhd != [hhd] of myself] > 0]
       
-      ;从新娘的朋友中选取一个人作为新郎
       if bride != nobody
       [
-        let brideboom nobody
+        let bridegroom nobody
         ifelse social-network
-        [set brideboom one-of people with [gender = 1 and age >= 20 and age - [age] of bride <= 10 and age - [age] of bride >= -10 and count in-couple-neighbors = 0 and hhd != [hhd] of bride and friend-neighbor? bride]]
-        [set brideboom one-of people with [gender = 1 and age >= 20 and age - [age] of bride <= 10 and age - [age] of bride >= -10 and count in-couple-neighbors = 0 and hhd != [hhd] of bride]]
-        if (brideboom != nobody) 
+        [set bridegroom one-of people with [gender = 1 and age >= 20 and age - [age] of bride <= 10 and age - [age] of bride >= -10 and count in-couple-neighbors = 0 and hhd != [hhd] of bride and friend-neighbor? bride]]
+        [set bridegroom one-of people with [gender = 1 and age >= 20 and age - [age] of bride <= 10 and age - [age] of bride >= -10 and count in-couple-neighbors = 0 and hhd != [hhd] of bride]]
+        if (bridegroom != nobody) 
         [
-          ;新娘和新郎都不等于nobody，代表成功找到了一对结婚的对象，可以更新结婚人数了
-          ifelse ([age] of bride <= 39) [set i1 i1 - 1] [set i2 i2 - 1]
-          ifelse ([age] of bride >= 40) [set i1 i1 - 1] [set i2 i2 - 1]
+          ifelse ([age] of bride <= 39) [set num1 num1 - 1] [set num2 num2 - 1]
+          ifelse ([age] of bride >= 40) [set num1 num1 - 1] [set num2 num2 - 1]
           ask bride [set color pink]
-          ask brideboom [set color white]
+          ask bridegroom [set color blue]
           ask bride 
           [
-            create-couple-with brideboom  ;连上夫妻线
-            ask my-friends with [other-end = brideboom] [die] ;朋友线断开
+            create-couple-with bridegroom  
+            ask my-friends with [other-end = bridegroom] [die] 
           ]
         ]
       ]
     ]
   ]
+end
+
+to get-married
+  ;select people will get married this year
+  ;create a csv file to store attributes of people who move to another household because of getting marriage
+  let file-mar1 (word "Daily Plan/marriage_house_move" year "year.csv")
+  let file-mar-past1 (word "marriage_house_move" year "year.csv")
+  py:set "filename" file-mar-past1
+  (py:run
+    "root_dir = os.getcwd()"
+    "for root, dirs, files in os.walk(root_dir):"
+    "  for file in files:"
+    "    if file == filename:"
+    "        file_path = os.path.join(root, file)"
+    "        os.remove(file_path)"
+  )
+  file-open file-mar1
+  file-print "PID,livelong,livelat,residence"
+  file-close
+  
+  ;Record the information of the couple who formed a new family due to marriage
+  let file-mar2 (word "Daily Plan/marriage_new_house" year "year.csv")
+  let file-mar-past2 (word "marriage_new_house" year "year.csv")
+  py:set "filename" file-mar-past2
+  (py:run
+    "root_dir = os.getcwd()"
+    "for root, dirs, files in os.walk(root_dir):"
+    "  for file in files:"
+    "    if file == filename:"
+    "        file_path = os.path.join(root, file)"
+    "        os.remove(file_path)"
+  )
+  file-open file-mar2
+  file-print "PID"
+  file-close
   
   ask people with [color = pink]
   [
     let bride self
-    let brideboom one-of people with [couple-neighbor? myself]
-    let new-family 0 ;设置一个变量来判断新郎新娘是否已经组成新家庭（不这样设置以下代码会出错的）
-    if ([relationship] of bride != 1 and [relationship] of brideboom != 1 and new-family = 0) ;两人都不是户主，则独立成一个新的家庭
+    let bridegroom one-of people with [couple-neighbor? myself]
+    let new-family 0 ; a local variable to record whether this new couple has already moved into a family
+    
+    ;Rules:
+    ;Case1: Neither of them is the householder (relationship = 1): they will separate from their original family and form a new one
+    ;Case2: One of them is householder: The one who is not householder joins the family who is householder
+    ;Case3: If both are householder, the one with fewer persons joins the one with more persons.
+    
+    
+    ; Case1: Neither of them is the householder (relationship = 1): form a new household
+    if ([relationship] of bride != 1 and [relationship] of bridegroom != 1 and new-family = 0)
     [
       set new-family 1
       let hhd1 (max [hhd] of people + 1)
-      ask one-of people with [(hhd = [hhd] of bride and relationship = 1) or (hhd = [hhd] of brideboom and relationship = 1)][set flexible flexible + 1] ;新郎新娘的原家庭由于家庭人数发生变化，flexible triger + 1 
-      let child-brideboom people with [hhd = [hhd] of brideboom and age < 18 and in-parent-neighbor? brideboom] ;新郎的跟随他的年龄小于18岁的孩子
-      let child-bride people with [hhd = [hhd] of bride and age < 18 and in-parent-neighbor? bride] ;新娘的跟随她的年龄小于18岁的孩子
-      ask brideboom [set hhd hhd1 set relationship 1 set mandatory 1]
-      ask bride [set hhd hhd1 set relationship 2]
-      ask child-bride [set hhd hhd1 set relationship 3]
-      ask child-brideboom [set hhd hhd1 set relationship 3]
+      ask one-of people with [(hhd = [hhd] of bride and relationship = 1) or (hhd = [hhd] of bridegroom and relationship = 1)][set flexible flexible + 1 if year >= 2021 [set appliance-trigger appliance-trigger + 1]] ;two original households' flexible trigger increases by 1
+      let child-bridegroom people with [hhd = [hhd] of bridegroom and age < 18 and in-parent-neighbor? bridegroom] ;record children of bridegroom aged below 18 years old
+      let child-bride people with [hhd = [hhd] of bride and age < 18 and in-parent-neighbor? bride] ;record children of bride aged below 18 years old
+      ask bridegroom [set hhd hhd1 set relationship 1 set mandatory 1 if livelong != 0 and livelat != 0 [file-open file-mar2 file-print pid file-close]]
+      ask bride [set hhd hhd1 set relationship 2 if livelong != 0 and livelat != 0 [file-open file-mar2 file-print pid file-close]]
+      ask child-bride [set hhd hhd1 set relationship 3 if livelong != 0 and livelat != 0 [file-open file-mar2 file-print pid file-close]]
+      ask child-bridegroom [set hhd hhd1 set relationship 3 if livelong != 0 and livelat != 0 [file-open file-mar2 file-print pid file-close]]
+      file-close
     ]
     
-    if ([relationship] of bride = 1 and [relationship] of brideboom != 1 and new-family = 0) ;新娘为户主，新郎不是户主，新郎的户口挪到新娘名下
+    ;Case 2: One of them is householder: The one who is not the householder joins the family of the householder
+    ;Case 2.1 Bride is a householder
+    if ([relationship] of bride = 1 and [relationship] of bridegroom != 1 and new-family = 0) ;Bride is householder, groom is not, groom joins bride's household
     [
       set new-family 1
-      ask one-of people with [hhd = [hhd] of brideboom and relationship = 1][set flexible flexible + 1]
-      let child-brideboom people with [hhd = [hhd] of brideboom and age < 18 and parent-neighbor? brideboom] ;跟随新郎的年龄小于18岁的孩子
-      ask brideboom [set hhd [hhd] of bride set relationship 2]
-      ask child-brideboom [set hhd [hhd] of bride set relationship 3]
-      ask people with [hhd = [hhd] of bride][move-to bride set livelong [livelong] of bride set livelat [livelat] of bride]
+      ask one-of people with [hhd = [hhd] of bridegroom and relationship = 1][set flexible flexible + 1 if year >= 2021 [set appliance-trigger appliance-trigger + 1]]
+      let child-bridegroom people with [hhd = [hhd] of bridegroom and age < 18 and parent-neighbor? bridegroom] ;record children of bridegroom aged below 18 years old
+      ask bridegroom [set hhd [hhd] of bride set relationship 2]
+      ask child-bridegroom [set hhd [hhd] of bride set relationship 3]
+      ifelse [livelong] of bride = 0 and [livelat] of bride = 0
+      [
+        ask bridegroom [if livelong != 0 and livelat != 0[file-open file-mar2 file-print pid file-close]]
+        ask child-bridegroom [if livelong != 0 and livelat != 0 [file-open file-mar2 file-print pid file-close]]
+        file-close
+      ]
+      [
+        let bride-long [livelong] of bride 
+        let bride-lat [livelat] of bride
+        let bride-residence 0
+        ask bride [ifelse count in-purchase-neighbors = 1 [set bride-residence (word "Residence " [RID] of one-of residences with [purchase-neighbor? myself])][set bride-residence (word "Residence " [RID] of one-of residences with [rent-neighbor? myself])]]
+        ask bridegroom [if livelong != 0 and livelat != 0 [file-open file-mar1 file-print (word pid","bride-long","bride-lat","bride-residence)]]
+        ask child-bridegroom [if livelong != 0 and livelat != 0 [file-open file-mar1 file-print (word pid","bride-long","bride-lat","bride-residence)]]
+        file-close
+      ]
+       ask people with [hhd = [hhd] of bride][move-to bride set livelong [livelong] of bride set livelat [livelat] of bride]
     ]
-    
-    if ([relationship] of bride != 1 and [relationship] of brideboom = 1 and new-family = 0) ;新郎为户主，新娘的户口挪到新郎名下
+    ;Case 2.2 Bridegroom is a householder
+    if ([relationship] of bride != 1 and [relationship] of bridegroom = 1 and new-family = 0) ;bridegroom is householder, bride is not, bride joins bridegroom's household
     [
       set new-family 1
-      ask one-of people with [hhd = [hhd] of bride and relationship = 1][set flexible flexible + 1] ;新娘原家庭flexible + 1
-      let child-bride people with [hhd = [hhd] of bride and age < 18 and parent-neighbor? brideboom] ;跟随新娘的年龄小于18岁的孩子
-      ask bride [set hhd [hhd] of brideboom set relationship 2]
-      ask child-bride [set hhd [hhd] of brideboom set relationship 3]
-      ask people with [hhd = [hhd] of brideboom][move-to brideboom set livelong [livelong] of brideboom set livelat [livelat] of brideboom]
+      ask one-of people with [hhd = [hhd] of bride and relationship = 1][set flexible flexible + 1 if year >= 2021 [set appliance-trigger appliance-trigger + 1]] ;bride's original household's flexible trigger increases by 1
+      let child-bride people with [hhd = [hhd] of bride and age < 18 and parent-neighbor? bridegroom] ;record children of bride aged below 18 years old
+      ask bride [set hhd [hhd] of bridegroom set relationship 2]
+      ask child-bride [set hhd [hhd] of bridegroom set relationship 3]
+      ifelse [livelong] of bride = 0 and [livelat] of bride = 0
+      [
+        ask bride [if livelong != 0 and livelat != 0[file-open file-mar2 file-print pid file-close]]
+        ask child-bride [if livelong != 0 and livelat != 0 [file-open file-mar2 file-print pid file-close]]
+        file-close
+      ]
+      [
+        let bridegroom-long [livelong] of bridegroom
+        let bridegroom-lat [livelat] of bridegroom
+        let bridegroom-residence 0
+        ask bridegroom [ifelse count in-purchase-neighbors = 1 [set bridegroom-residence (word "Residence " [RID] of one-of residences with [purchase-neighbor? myself])][set bridegroom-residence (word "Residence " [RID] of one-of residences with [rent-neighbor? myself])]]
+        ask child-bride [if livelong != 0 and livelat != 0 [file-open file-mar1 file-print (word pid","bridegroom-long","bridegroom-lat","bridegroom-residence)]]
+        ask child-bride [if livelong != 0 and livelat != 0 [file-open file-mar1 file-print (word pid","bridegroom-long","bridegroom-lat","bridegroom-residence)]]
+        file-close
+      ]
+      ask people with [hhd = [hhd] of bridegroom][move-to bridegroom set livelong [livelong] of bridegroom set livelat [livelat] of bridegroom]
     ]
     
-    ;如果新娘新郎都为户主，让人少的一边加入人多的一边
-    if ([relationship] of bride = 1 and [relationship] of brideboom = 1 and new-family = 0) 
+    ;Case 3: If both are householder, the one with fewer persons joins the one with more persons.
+    if ([relationship] of bride = 1 and [relationship] of bridegroom = 1 and new-family = 0) 
     [
       set new-family 1
       let num-bride count people with [hhd = [hhd] of bride]
-      let num-brideboom count people with [hhd = [hhd] of brideboom]
-      ifelse (num-bride > num-brideboom) ;新娘家的人数大于新郎家的人数，让新郎加入新娘家里
+      let num-bridegroom count people with [hhd = [hhd] of bridegroom]
+      ;Case 3.1: The bride's family is larger than the bridegroom's family.
+      ifelse (num-bride > num-bridegroom) ;The bride's original family is larger than the groom's original family, and the groom joins the bride's family.
       [
-        let hhd1 [hhd] of brideboom
+        let hhd1 [hhd] of bridegroom
         let hhd2 [hhd] of bride
-        ask brideboom [set hhd hhd2 set relationship 2]
-        let child-brideboom people with [hhd = hhd1 and age < 18 and parent-neighbor? brideboom] ;跟随新郎的年龄小于18岁的孩子
-        if child-brideboom != nobody [ask child-brideboom [set hhd hhd2 set relationship 3]]
+        ask bridegroom [set hhd hhd2 set relationship 2]
+        let child-bridegroom people with [hhd = hhd1 and age < 18 and parent-neighbor? bridegroom] 
+        if child-bridegroom != nobody [ask child-bridegroom [set hhd hhd2 set relationship 3]]
         ask people with [hhd = hhd2][move-to bride set livelong [livelong] of bride set livelat [livelat] of bride]
-        ask bride [set flexible flexible + 1] ;由于家庭人数发生变化，flexible trigger + 1
-        
-        ;让新郎的原家庭重新选择一个人为户主，并更新家庭关系
+        ask bride [set flexible flexible + 1 if year >= 2021 [set appliance-trigger appliance-trigger + 1]] 
+        ;The groom's original family chooses a householder and renews the family relationship
         if (count people with [hhd =  hhd1] > 0)
         [
-          ;选择一个人为户主
+          ;selecting householder
           let num-adult count people with [hhd = hhd1 and age >= 18]
           ifelse (num-adult > 0)
-          [ask one-of people with [hhd = hhd1 and age >= 18] [set relationship 1 set mandatory [mandatory] of brideboom set flexible [flexible] of brideboom + 1]]
+          [ask one-of people with [hhd = hhd1 and age >= 18] [set relationship 1 set mandatory [mandatory] of bridegroom set flexible [flexible] of bridegroom + 1]]
           [ask one-of people with [hhd = hhd1][set relationship 1]]
           let hhder one-of people with [hhd = hhd1 and relationship = 1]
           ask hhder
           [
-            update-relationship hhd1 hhder ;更新家庭关系
-            ;从新郎处继承residence相关属性
-            set residence-cost [residence-cost] of brideboom
-            set residence-size [residence-size] of brideboom
-            set drinkingwater [drinkingwater] of bride      
-            set hotwater [hotwater] of bride 
-            set piped-natural-gas [piped-natural-gas] of brideboom 
-            set winterheat [winterheat] of brideboom 
-            set summercool [summercool] of brideboom          
-            set Electric-Footbath [Electric-Footbath] of brideboom 
-            set Water-heater [Water-heater] of brideboom 
-            set showerhead [showerhead] of brideboom 
-            set thermostatic [thermostatic] of brideboom 
-            set Faucet [Faucet] of brideboom 
-            set Dishwasher [Dishwasher] of brideboom 
-            set sterilizer [sterilizer] of brideboom 
-            set sweeping-robot [sweeping-robot] of brideboom 
-            set Electric-mop [Electric-mop] of brideboom 
-            set Intelligent-Toilet [Intelligent-Toilet] of brideboom 
-            set Washing-machine [Washing-machine] of brideboom
-            set Dry-or-sterilize [Dry-or-sterilize] of brideboom
-            set pressure [pressure] of brideboom    
-            set microwave-oven [microwave-oven] of brideboom  
-            set soymilk [soymilk] of brideboom   
-            set Ele-oven [Ele-oven] of brideboom
-            set Terminal-water [Terminal-water] of brideboom
-            set Kitchen-water-heat [Kitchen-water-heat] of brideboom
-            set radiator-bag [radiator-bag] of brideboom
-            set bath-style [bath-style] of brideboom
-            set Bath-fre-winter  [Bath-fre-winter] of brideboom
-            set Bath-fre-spring [Bath-fre-spring] of brideboom
-            set Bath-fre-summer  [Bath-fre-summer] of brideboom
-            set Bath-time-winter [Bath-time-winter] of brideboom
-            set Bath-time-spring [Bath-time-spring] of brideboom
-            set Bath-time-summer [Bath-time-summer] of brideboom
-            set Adj-temp [Adj-temp] of brideboom
-            set Water-insulation [Water-insulation] of brideboom
-            set footbath-fre-winter [footbath-fre-winter] of brideboom
-            set footbath-fre-spring [footbath-fre-spring] of brideboom
-            set footbath-fre-summer [footbath-fre-summer] of brideboom
-            set cook-fire-fre [cook-fire-fre] of brideboom
-            set Soup-fre [Soup-fre] of brideboom
-            set Cook-Energy [Cook-Energy] of brideboom
-            set Gasstove-time [Gasstove-time] of brideboom
-            set bread-machine-fre [bread-machine-fre] of brideboom
-            set ele-oven-fre [ele-oven-fre] of brideboom
-            set soymilk-fre [soymilk-fre] of brideboom
-            set ele-stewpot-fre [ele-stewpot-fre] of brideboom
-            set induction-fre [induction-fre] of brideboom
-            set gasstove-fre [gasstove-fre] of brideboom
-            set pressure-fre [pressure-fre] of brideboom
-            set rice-fre [rice-fre] of brideboom
-            set ele-pan-fre [ele-pan-fre] of brideboom
-            set sterilizer-fre [sterilizer-fre] of brideboom
-            set dishes-num [dishes-num] of brideboom
-            set washes-avenum [washes-avenum] of brideboom
-            set wash-dish-method [wash-dish-method] of brideboom
-            set Wash-hotwater [Wash-hotwater] of brideboom
-            set wash-time [wash-time] of brideboom
-            set wash-cycle [wash-cycle] of brideboom
-            set Clean-method [Clean-method] of brideboom
-            set Sweep-fre [Sweep-fre] of brideboom
-            set Mop-fre [Mop-fre] of brideboom
-            set wash-method [wash-method] of brideboom
-            set handwash-fre-winter [handwash-fre-winter] of brideboom
-            set handwash-fre-spring [handwash-fre-spring] of brideboom
-            set handwash-fre-summer [handwash-fre-summer] of brideboom
-            set washmachine-fre-winter [washmachine-fre-winter] of brideboom
-            set washmachine-fre-spring [washmachine-fre-spring] of brideboom
-            set washmachine-fre-summer [washmachine-fre-summer] of brideboom
-            set Rinse-method [Rinse-method] of brideboom
-            set laundry-time [laundry-time] of brideboom
-            set Num-clothes-rinsed [Num-clothes-rinsed] of brideboom
-            set hotwater-laundry [hotwater-laundry] of brideboom
-            set Dry-sterilize [Dry-sterilize] of brideboom
-            set time-heatequipment-winter [time-heatequipment-winter] of brideboom
-            set year-fee [year-fee] of brideboom
-            set winter-fee [winter-fee] of brideboom
-            set spring-fee [spring-fee] of brideboom
-            set summer-fee [summer-fee] of brideboom
-            if [count in-rent-neighbors] of brideboom = 1 [let target one-of residences with [rent-neighbor? brideboom] create-rent-with target]
-            if [count in-purchase-neighbors] of brideboom = 1 [let target one-of residences with [purchase-neighbor? brideboom] create-purchase-with target]
-          ]     
+            update-relationship hhd1 hhder ;renews the family relationship
+            ;New householder records residence-related information
+            set residence-cost [residence-cost] of bridegroom
+            set residence-size [residence-size] of bridegroom
+            if [count in-rent-neighbors] of bridegroom = 1 [let target one-of residences with [rent-neighbor? bridegroom] create-rent-with target]
+            if [count in-purchase-neighbors] of bridegroom = 1 [let target one-of residences with [purchase-neighbor? bridegroom] create-purchase-with target]
+          ]    
         ]
-        
-        ;新郎不再是户主，户主相关的residence属性清空
-        ask brideboom [set residence-size 0 set residence-cost 0 set current-accessibility 0 set mandatory 0 set flexible 0 ask my-rents [die] ask my-purchases [die]]
+        ifelse [livelong] of bride = 0 and [livelat] of bride = 0
+        [
+          ask bridegroom [if livelong != 0 and livelat != 0 [file-open file-mar2 file-print pid file-close]]
+          ask child-bridegroom [if livelong != 0 and livelat != 0 [file-open file-mar2 file-print pid file-close]]
+        ]
+        [
+          let bride-long [livelong] of bride
+          let bride-lat [livelat] of bride
+          let bride-residence 0
+          ask bride [ifelse count in-purchase-neighbors = 1 [set bride-residence (word "Residence " [RID] of one-of residences with [purchase-neighbor? myself])][set bride-residence (word "Residence " [RID] of one-of residences with [rent-neighbor? myself])]]
+          ask bridegroom [if livelong != 0 and livelat != 0 [file-open file-mar1 file-print (word pid","bride-long","bride-lat","bride-residence)]]
+          ask child-bridegroom [if livelong != 0 and livelat != 0 [file-open file-mar1 file-print (word pid","bride-long","bride-lat","bride-residence)]]
+          file-close
+        ] 
+        ask bridegroom [set residence-size 0 set residence-cost 0 set current-accessibility 0 set mandatory 0 set flexible 0 ask my-rents [die] ask my-purchases [die]]
       ]
-      
-      ;让新娘加入新郎家
+      ;Case 3.2: The bridegroom's original family is larger than the groom's original family, and the groom joins the bride's family.
       [
         set new-family 1
         let hhd1 [hhd] of bride
-        let hhd2 [hhd] of brideboom
+        let hhd2 [hhd] of bridegroom
         ask bride [set hhd hhd2 set relationship 2]
         
-        let child-bride people with [hhd = hhd1 and age < 18 and parent-neighbor? bride] ;跟随新娘的年龄小于18岁的孩子
+        let child-bride people with [hhd = hhd1 and age < 18 and parent-neighbor? bride] 
         if child-bride != nobody [ask child-bride [set hhd hhd1 set relationship 3]]
-        ask people with [hhd = hhd2][move-to brideboom set livelong [livelong] of brideboom set livelat [livelat] of brideboom]
-        ask brideboom [set flexible flexible + 1] ;由于家庭人数发生变化，flexible trigger + 1
+        ask people with [hhd = hhd2][move-to bridegroom set livelong [livelong] of bridegroom set livelat [livelat] of bridegroom]
+        ask bridegroom [set flexible flexible + 1 if year >= 2021 [set appliance-trigger appliance-trigger + 1]] ;由于家庭人数发生变化，flexible trigger + 1
         
-        ;让新娘的原家庭生成新户口
         if (count people with [hhd =  hhd1] > 0)
         [
-          ;选择一个人为户主
           let num-adult count people with [hhd = hhd1 and age >= 18]
           ifelse (num-adult > 0)
           [ask one-of people with [hhd = hhd1 and age >= 18] [set relationship 1]]
@@ -291,278 +288,34 @@ to marriage-model
           let hhder one-of people with [hhd = hhd1 and relationship = 1]
           ask hhder 
           [
-            update-relationship hhd1 hhder;更新家庭关系   
-            ;从新娘处继承residence相关属性
+            update-relationship hhd1 hhder
             set residence-cost [residence-cost] of bride
             set residence-size [residence-size] of bride
             if [count in-rent-neighbors] of bride = 1 [let target one-of residences with [rent-neighbor? bride] create-rent-with target]
             if [count in-purchase-neighbors] of bride = 1 [let target one-of residences with [purchase-neighbor? bride] create-purchase-with target]
             set mandatory [mandatory] of bride set flexible [flexible] of bride + 1
-            set drinkingwater [drinkingwater] of bride      
-            set hotwater [hotwater] of bride 
-            set piped-natural-gas [piped-natural-gas] of bride 
-            set winterheat [winterheat] of bride 
-            set summercool [summercool] of bride          
-            set Electric-Footbath [Electric-Footbath] of bride 
-            set Water-heater [Water-heater] of bride 
-            set showerhead [showerhead] of bride 
-            set thermostatic [thermostatic] of bride 
-            set Faucet [Faucet] of bride 
-            set Dishwasher [Dishwasher] of bride 
-            set sterilizer [sterilizer] of bride 
-            set sweeping-robot [sweeping-robot] of bride 
-            set Electric-mop [Electric-mop] of bride 
-            set Intelligent-Toilet [Intelligent-Toilet] of bride 
-            set Washing-machine [Washing-machine] of bride
-            set Dry-or-sterilize [Dry-or-sterilize] of bride
-            set pressure [pressure] of bride    
-            set microwave-oven [microwave-oven] of bride  
-            set soymilk [soymilk] of bride   
-            set Ele-oven [Ele-oven] of bride
-            set Terminal-water [Terminal-water] of bride
-            set Kitchen-water-heat [Kitchen-water-heat] of bride
-            set radiator-bag [radiator-bag] of bride
-            set bath-style [bath-style] of bride
-            set Bath-fre-winter  [Bath-fre-winter] of bride
-            set Bath-fre-spring [Bath-fre-spring] of bride
-            set Bath-fre-summer  [Bath-fre-summer] of bride
-            set Bath-time-winter [Bath-time-winter] of bride
-            set Bath-time-spring [Bath-time-spring] of bride
-            set Bath-time-summer [Bath-time-summer] of bride
-            set Adj-temp [Adj-temp] of bride
-            set Water-insulation [Water-insulation] of bride
-            set footbath-fre-winter [footbath-fre-winter] of bride
-            set footbath-fre-spring [footbath-fre-spring] of bride
-            set footbath-fre-summer [footbath-fre-summer] of bride
-            set cook-fire-fre [cook-fire-fre] of bride
-            set Soup-fre [Soup-fre] of bride
-            set Cook-Energy [Cook-Energy] of bride
-            set Gasstove-time [Gasstove-time] of bride
-            set bread-machine-fre [bread-machine-fre] of bride
-            set ele-oven-fre [ele-oven-fre] of bride
-            set soymilk-fre [soymilk-fre] of bride
-            set ele-stewpot-fre [ele-stewpot-fre] of bride
-            set induction-fre [induction-fre] of bride
-            set gasstove-fre [gasstove-fre] of bride
-            set pressure-fre [pressure-fre] of bride
-            set rice-fre [rice-fre] of bride
-            set ele-pan-fre [ele-pan-fre] of bride
-            set sterilizer-fre [sterilizer-fre] of bride
-            set dishes-num [dishes-num] of bride
-            set washes-avenum [washes-avenum] of bride
-            set wash-dish-method [wash-dish-method] of bride
-            set Wash-hotwater [Wash-hotwater] of bride
-            set wash-time [wash-time] of bride
-            set wash-cycle [wash-cycle] of bride
-            set Clean-method [Clean-method] of bride
-            set Sweep-fre [Sweep-fre] of bride
-            set Mop-fre [Mop-fre] of bride
-            set wash-method [wash-method] of bride
-            set handwash-fre-winter [handwash-fre-winter] of bride
-            set handwash-fre-spring [handwash-fre-spring] of bride
-            set handwash-fre-summer [handwash-fre-summer] of bride
-            set washmachine-fre-winter [washmachine-fre-winter] of bride
-            set washmachine-fre-spring [washmachine-fre-spring] of bride
-            set washmachine-fre-summer [washmachine-fre-summer] of bride
-            set Rinse-method [Rinse-method] of bride
-            set laundry-time [laundry-time] of bride
-            set Num-clothes-rinsed [Num-clothes-rinsed] of bride
-            set hotwater-laundry [hotwater-laundry] of bride
-            set Dry-sterilize [Dry-sterilize] of bride
-            set time-heatequipment-winter [time-heatequipment-winter] of bride
-            set year-fee [year-fee] of bride
-            set winter-fee [winter-fee] of bride
-            set spring-fee [spring-fee] of bride
-            set summer-fee [summer-fee] of bride
           ]        
         ]
-      
-        ;新娘不再是户主，户主相关的residence属性清空
+        ifelse [livelong] of bridegroom = 0 and [livelat] of bridegroom = 0
+        [
+          ask bride [if livelong != 0 and livelat != 0 [file-open file-mar2 file-print pid file-close]]
+          ask child-bride [if livelong != 0 and livelat != 0 [file-open file-mar2 file-print pid file-close]]
+          file-close
+        ]
+        [
+          let bridegroom-long [livelong] of bridegroom
+          let bridegroom-lat [livelat] of bridegroom
+          let bridegroom-residence 0
+          ask bridegroom [ifelse count in-purchase-neighbors = 1 [set bridegroom-residence (word "Residence " [RID] of one-of residences with [purchase-neighbor? myself])][set bridegroom-residence (word "Residence " [RID] of one-of residences with [rent-neighbor? myself])]]
+          ask bride [if livelong != 0 and livelat != 0 [file-open file-mar1 file-print (word pid","bridegroom-long","bridegroom-lat","bridegroom-residence)]]
+          ask child-bride [if livelong != 0 and livelat != 0 [file-open file-mar1 file-print (word pid","bridegroom-long","bridegroom-lat","bridegroom-residence)]]
+          file-close
+        ] 
         ask bride [set residence-size 0 set residence-cost 0 set current-accessibility 0 set mandatory 0 set flexible 0 ask my-rents [die] ask my-purchases [die]]  
       ]
     ]
-    set color white ask brideboom [set color white]
+    set color white ask bridegroom [set color white]
   ]
-  
   ask people [set number count people with [hhd = [hhd] of myself] set hhd-income (sum [income] of people with [hhd = [hhd] of myself] ) * 12]
-  print "marriage model finished"
 end
 
-to divorce-model
-  let num-divorce 0
-  (ifelse 
-    year = 2021 [set num-divorce round (item 0 Ndivo / 1000)]
-    year = 2022 [set num-divorce round (item 1 Ndivo / 1000)]
-    year = 2023 [set num-divorce round (item 2 Ndivo / 1000)]
-    year = 2024 [set num-divorce round (item 3 Ndivo / 1000)]
-    year = 2025 [set num-divorce round (item 4 Ndivo / 1000)]
-    year = 2026 [set num-divorce round (item 5 Ndivo / 1000)]
-    year = 2027 [set num-divorce round (item 6 Ndivo / 1000)]
-    year = 2028 [set num-divorce round (item 7 Ndivo / 1000)]
-    year = 2029 [set num-divorce round (item 8 Ndivo / 1000)]
-    year = 2030 [set num-divorce round (item 9 Ndivo / 1000)]
-    year = 2031 [set num-divorce round (item 10 Ndivo / 1000)]
-    [set num-divorce round (item 11 Ndivo / 1000)]
-  )
-  set num-divorce num-divorce * 2
-  let num-divorce1 round (0.7 * num-divorce) ;40岁以下离婚人数
-  let num-divorce2 num-divorce - num-divorce1 ;40岁以上离婚人数
-  
-  ;选择离婚的couples
-  while [num-divorce1 + num-divorce2 > 0]
-  [
-    if (num-divorce1 > 0 and num-divorce2 > 0)
-    [
-      let wife one-of people with [count in-couple-neighbors = 1 and gender = 0]
-      if wife != nobody
-      [
-        let husband one-of people with [couple-neighbor? wife]
-        
-        ifelse [age] of wife <= 39 [set num-divorce1 num-divorce1 - 1] [set num-divorce2 num-divorce2 - 1]
-        ifelse [age] of husband <= 39 [set num-divorce1 num-divorce1 - 1] [set num-divorce2 num-divorce2 - 1]
-        ask wife [set color pink]
-        ask husband [set color blue] ;用颜色来标记wife和husband
-      ]
-    ]
-    
-    if (num-divorce1 <= 0 and num-divorce2 > 0)
-    [
-      let wife one-of people with [count in-couple-neighbors = 1 and age >= 40]
-      if wife != nobody
-      [
-        let husband one-of people with [couple-neighbor? wife]
-        ifelse [age] of wife <= 39 [set num-divorce1 num-divorce1 - 1] [set num-divorce2 num-divorce2 - 1]
-        ifelse [age] of husband <= 39 [set num-divorce1 num-divorce1 - 1] [set num-divorce2 num-divorce2 - 1]
-        ask wife [set color pink]
-        ask husband [set color blue] ;用颜色来标记wife和husband
-      ]
-    ]
-    
-    if (num-divorce1 > 0 and num-divorce2 <= 0)
-    [
-      let wife one-of people with [count in-couple-neighbors = 1 and age <= 39]
-      if wife != nobody
-      [
-        let husband one-of people with [couple-neighbor? wife]
-        ifelse [age] of wife <= 39 [set num-divorce1 num-divorce1 - 1] [set num-divorce2 num-divorce2 - 1]
-        ifelse [age] of husband <= 39 [set num-divorce1 num-divorce1 - 1] [set num-divorce2 num-divorce2 - 1]
-        ask wife [set color pink]
-        ask husband [set color blue] ;用颜色来标记wife和husband
-      ]
-    ]
-  ]
-  
-  ask people with [color = pink]
-  [
-    let wife self
-    let husband one-of people with [couple-neighbor? wife]
-    ;couple线断掉
-    ask wife [ask my-couples [die]]
-  
-    let hhd1 max [hhd] of people + 1 ;新家庭id
-    let hhd2 [hhd] of wife ;旧家庭id
-    let new-family 0 ;一个变量判断家庭是否已经完成拆分
-  
-    ;身份为配偶的离开 
-    if ([relationship] of wife = 2 and new-family = 0) ;如果妻子为配偶
-    [
-      set new-family 1
-      ask wife [set hhd hhd1 set relationship 1]
-      ask people with [hhd = hhd2 and (relationship = 5 or relationship = 9 or relationship = 10)] [set hhd hhd1]  ;配偶的父母、爷爷奶奶、外公外婆离开
-      let children2 people with [age < 18 and parent-neighbor? wife and parent-neighbor? husband] ;妻子和丈夫的孩子
-      if children2 != nobody
-      [
-        ask children2 ;未满18岁的孩子有一半的概率跟随离开
-        [
-          let p random-float 1 
-          if (p > 0.5) 
-          [
-            set hhd hhd1
-          ]
-        ]
-      ]
-      ask wife [update-relationship hhd1 wife set mandatory 1]
-      ask husband [set flexible flexible + 1]
-    ]
-  
-    if ([relationship] of husband = 2 and new-family = 0) ;如果丈夫为配偶
-    [
-      set new-family 1
-      ask husband [set hhd hhd1 set relationship 1]
-      ask people with [hhd = hhd2 and (relationship = 5 or relationship = 9 or relationship = 10)] [set hhd hhd1]
-      let children2 people with [parent-neighbor? wife and parent-neighbor? husband and age < 18] ;妻子和丈夫的孩子
-      if children2 != nobody
-      [
-        ask children2 ;未满18岁的孩子有一半的概率跟随离开
-        [
-          let p random-float 1 
-          if (p > 0.5) 
-          [
-            set hhd hhd1
-          ]
-        ]
-      ]
-      ask husband [update-relationship hhd1 husband set mandatory 1]
-      ask wife [set flexible flexible + 1]
-    ]
-  
-    ;以女婿/儿媳的身份离开
-    if ([relationship] of wife = 13 and new-family = 0) ;如果妻子是儿媳
-    [
-      set new-family 1
-      ask wife [set hhd hhd1 set relationship 1]
-      let children2 people with [parent-neighbor? wife and parent-neighbor? husband and age < 18] ;妻子和丈夫的孩子
-      if children2 != nobody
-      [
-        ask children2 ;未满18岁的孩子有一半的概率跟随离开
-        [
-          let p random-float 1 
-          if (p > 0.5) 
-          [
-            set hhd hhd1
-          ]
-        ]
-      ]
-     ; ask wife [update-relationship hhd1 wife set mandatory 1]
-      ask one-of people with [hhd = [hhd] of husband and relationship = 1] [set flexible flexible + 1]
-    ]
-  
-    if ([relationship] of husband = 13 and new-family = 0) ;如果丈夫是女婿
-    [
-      ask husband [set hhd hhd1 set relationship 1 set mandatory 1]
-      let children2 people with [parent-neighbor? wife and parent-neighbor? husband and age < 18] ;妻子和丈夫的孩子
-      if children2 != nobody
-      [
-        ask children2 ;未满18岁的孩子有一半的概率跟随离开
-        [
-          let p random-float 1 
-          if (p > 0.5) 
-          [
-            set hhd hhd1
-          ]
-        ]
-      ]
-      ask husband [update-relationship hhd1 husband set mandatory 1] 
-      ask one-of people with [hhd = [hhd] of wife and relationship = 1][set flexible flexible + 1]
-    ]
-  
-    if ([relationship] of wife != 1 and [relationship] of wife != 2 and [relationship] of wife != 13 and new-family = 0)  ;其他情况
-    [
-      ;随机选择一人离开
-      ifelse (random-float 1 > 0.5) ;p > 0.5 让妻子离开；p<= 0.5 让丈夫离开
-      [
-        ask wife [set hhd hhd1 set relationship 1 set mandatory 1]
-        ask one-of people with [hhd = [hhd] of husband and relationship = 1][set flexible flexible + 1]
-      ]
-      [
-        ask husband [set hhd hhd1 set relationship 1 set mandatory 1]
-        ask one-of people with [hhd = [hhd] of wife and relationship = 1][set flexible flexible + 1]
-      ]
-    ]
-    set color white ask husband [set color white]
-  ]
-  
-  ask people [set number count people with [hhd = [hhd] of myself] set hhd-income (sum [income] of people with [hhd = [hhd] of myself]) * 12]
-  print "divorce model finished"
-end
-  

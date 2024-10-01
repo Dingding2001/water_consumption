@@ -22,7 +22,7 @@ from Base_Map import base_map_path as other_base_map_path
 years = list(range(2010, 2054))
 output_folder = os.path.join(os.getcwd(), "csv街道图中转")
 os.makedirs(output_folder, exist_ok=True)
-TitleSize = 100
+TitleSize = 60
 base_map_path = other_base_map_path
 
 for year in years:
@@ -48,7 +48,7 @@ for year in years:
         print(f"")
         
 current_time = datetime.now()
-plt.rcParams['font.sans-serif'] = 'Times new roman'#字体现在是中易黑体
+plt.rcParams['font.sans-serif'] = 'SimHei'#字体现在是中易黑体
 plt.rcParams['font.weight'] = 'bold'#加粗
 plt.rcParams['font.size'] = 40#总局字体大小，后面有单独标题大小
 
@@ -209,10 +209,10 @@ for i, (shp_file, gdf) in enumerate(zip(shp_files, gdf_list)):
         ax.fill_between([], [], color=cmap(j), label=f'{int(unique_percentiles[j])}-{int(unique_percentiles[j+1])}')
     # 显示图例
     ax.legend(title="Rent of Office Building\nUnit: RMB/m2", loc='upper right', fontsize=35)
-    plt.title(title, fontsize=TitleSize, fontname='Times new roman', fontweight='bold')
+    plt.title(title, fontsize=TitleSize, fontname='SimHei', fontweight='bold')
     
     output_file_path = os.path.join(folder_name,'Geometrically Spaced',f"{os.path.splitext(shp_file)[0]}.png")
-    plt.savefig(output_file_path, dpi=100, bbox_inches='tight')
+    plt.savefig(output_file_path, dpi=300, bbox_inches='tight')
     plt.close()
 
 
@@ -234,10 +234,10 @@ for i, (shp_file, gdf) in enumerate(zip(shp_files, gdf_list)):
         ax.fill_between([], [], color=cmap(j), label=f'{int(price_range_all_years[j])}-{int(price_range_all_years[j+1])}')
 
     ax.legend(title="Rent of Office Building\nUnit: RMB/m2", loc='upper right', fontsize=35)
-    plt.title(title, fontsize=TitleSize, fontname='Times new roman', fontweight='bold')
+    plt.title(title, fontsize=TitleSize, fontname='SimHei', fontweight='bold')
     
     output_file_path = os.path.join(folder_name,'Equal Value', f"{os.path.splitext(shp_file)[0]}.png")
-    plt.savefig(output_file_path, dpi=100, bbox_inches='tight')
+    plt.savefig(output_file_path, dpi=300, bbox_inches='tight')
     plt.close()
 
 print("")

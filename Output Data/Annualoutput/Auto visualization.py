@@ -1,4 +1,3 @@
-#%%
 import os
 import re
 import shutil
@@ -34,13 +33,11 @@ for csv_file in csv_files:
 print("")
 #%%
 #修改底图文件
-base_map_path = "basemap/Shenzhen_Map.shp"
+base_map_path = "basemap/BJXZ.shp"
 #若是结果内只有一个csv文档则可能是底图文件设置有误
 #csv读取制图配置 开启请设置为1
-#%%
-#csv读取制图配置 开启请设置为1
 
-people = 1
+people = 0
 #电车部分
 people_BEV = 0
 people_CV = 0
@@ -48,20 +45,18 @@ people_PHEV = 0
 
 residences = 1
 OBs = 1
-firms = 1
-
-water_consumption = 1
-water_family_consumption = 1
-inhome_dailyplan = 1
+firms = 0
 
 energy_consumption = 0
+energy_density = 0
 employees = 1
 
 social_network = 0
 social_ave_friend = 0 #历年折线图
 #功能性配置 开启请设置为1
-GIF = 1    #动图
+GIF = 0    #动图
 line = 0    #折线图
+
 #%%
 library_folder = os.path.join(os.getcwd(), "Visualize Code Library")
 file_path = os.path.join(library_folder, "Transfer_map.py")
@@ -85,6 +80,33 @@ if energy_consumption == 1:
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE,
                                      text=True)
+
+
+            print(process.stdout)
+
+            if process.stderr:
+                print(process.stderr)
+
+            print('已完成energy consumption系列的可视化')
+        else:
+            print('没有符合条件的energy consumption.csv文件')
+    else:
+        print('Visualize Code Library子文件夹不存在')
+else:
+    print('已关闭energy consumption.csv的可视化')
+
+if energy_density == 1:
+    visualize_library_path = 'Visualize Code Library'
+    if os.path.exists(visualize_library_path):
+        pattern = re.compile(r'.*Energy.*year.*\.csv')
+        csv_files = [file for file in os.listdir(visualize_library_path) if pattern.match(file)]
+
+        if csv_files:
+            process = subprocess.run(['python', os.path.join(visualize_library_path, 'energy_area.py')],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE,
+                                     text=True)
+
 
             print(process.stdout)
 
@@ -349,61 +371,6 @@ if employees == 1:
         print('Visualize Code Library子文件夹不存在')
 else:
     print('已关闭employees.csv的可视化')
-
-#%%
-# 检测是否有water_consumption=1
-if water_consumption == 1:
-    visualize_library_path = 'Visualize Code Library'
-    if os.path.exists(visualize_library_path):
-        pattern = re.compile(r'.*water-consumption-family.*year.*\.csv')
-        csv_files = [file for file in os.listdir(visualize_library_path) if pattern.match(file)]
-
-        if csv_files:
-            process = subprocess.run(['python', os.path.join(visualize_library_path, 'water_consumption.py')],
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE,
-                                     text=True)
-
-            print(process.stdout)
-
-            if process.stderr:
-                print(process.stderr)
-
-            print('已完成water-consumption-people系列的可视化')
-        else:
-            print('没有符合条件的water-consumption-people.csv文件')
-    else:
-        print('Visualize Code Library子文件夹不存在')
-else:
-    print('已关闭water-consumption-people.csv的可视化')
-
-#%%
-# 检测是否有water_consumption=1
-if water_family_consumption == 1:
-    visualize_library_path = 'Visualize Code Library'
-    if os.path.exists(visualize_library_path):
-        pattern = re.compile(r'.*water-consumption-family.*year.*\.csv')
-        csv_files = [file for file in os.listdir(visualize_library_path) if pattern.match(file)]
-
-        if csv_files:
-            process = subprocess.run(['python', os.path.join(visualize_library_path, 'water_family.py')],
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE,
-                                     text=True)
-
-            print(process.stdout)
-
-            if process.stderr:
-                print(process.stderr)
-
-            print('已完成water-consumption-family系列的可视化')
-        else:
-            print('没有符合条件的water-consumption-family.csv文件')
-    else:
-        print('Visualize Code Library子文件夹不存在')
-else:
-    print('已关闭water-consumption-family.csv的可视化')
-    
 #%%
 if social_network == 1:
     visualize_library_path = 'Visualize Code Library'
@@ -477,6 +444,9 @@ if social_ave_friend == 1 and line == 1:
 else:
     print('已关闭social_ave_friend或折线图line的可视化')
 
+#%%
+"""
+"""
 
 #%%
 #清理visualize_code_library
@@ -609,4 +579,3 @@ if os.path.exists(final_check):
     print("已完成全部过程")
 else:
     print("已完成全部过程")
-# %%

@@ -24,12 +24,21 @@ to combine-attribute
     if (income > 8000 and income <= 10000) [set income-group 5]
     if (income > 10000 and income <= 15000) [set income-group 6]
     if (income >= 15000) [set income-group 7]
+  
+  ;combine household  income
+    if hhd-income <= 100000 [set hhd-income 1]
+    if hhd-income > 100000 and hhd-income <= 200000 [set hhd-income-group 2]
+    if hhd-income > 200000 and hhd-income <= 300000 [set hhd-income-group 3]
+    if hhd-income > 300000 and hhd-income <= 400000 [set hhd-income-group 3]
+    if hhd-income > 500000 and hhd-income <= 700000 [set hhd-income-group 4]
+    if hhd-income > 700000 and hhd-income <= 1000000 [set hhd-income-group 5]
+    if hhd-income > 1000000 [set hhd-income-group 7]
   ]
 end
 
 to generate-network
   combine-attribute
-  while [count people with [count in-friend-neighbors < min-friend] > 0]
+  while [count people with [count in-friend-neighbors < min-friend] > 0] ;if there are people whose number of friends is below to its minimum number of friends, they will seek for new friends
   [
     ask people with [count in-friend-neighbors < min-friend]
     [
@@ -47,7 +56,7 @@ to generate-network
 end
 
 to update-friend
-  ;断开朋友关系
+  ;If the gap between two friends is too wide, they will no longer be friends
   ask people
   [
     let age-group1 age-group
@@ -62,14 +71,14 @@ to update-friend
     ]
   ]
   
-  ;为18岁的people生成交友圈
+  ;Generate social network for people who have just turned 18 years old
   ask people with [age = 18 and min-friend = 0 and max-friend = 0]
   [
     set max-friend random 20
     ifelse max-friend > 5 [set min-friend max-friend - 5] [set min-friend 0]
   ]
   
-  ;朋友数量不够的重新交朋友
+  ;if there are people whose number of friends is below to its minimum number of friends, they will seek for new friends
   while [count people with [count in-friend-neighbors < min-friend] > 0]
   [
     ask people with [count in-friend-neighbors < min-friend]

@@ -1,33 +1,39 @@
 shoppings-own
 [
   frequency
-  loc ;1 工作学习地附近 2 家附近 3 其他地点
-  date ; 1 weekday, 2 weekend
+  loc ; Record the place of activity 1- around work/study place, 2- around home; 3- other place
+  date ; Record the time of activity 1- weekday 2- weekend
 ]
 
 leisures-own
 [
   frequency
-  loc
-  date ; 1 weekday, 2 weekend
+  loc ;Record the place of activity 1- around work/study place, 2- around home; 3- other place
+  date ; Record the time of activity 1- weekday 2- weekend
 ]
 
 to generate-daily-plan
-  ;agent随机生成daily plan
+  ;generate daily plan for people
+  ;step 1: divide shops into three groups accoding to their places (around work/study place, around home, and other places)
+  ;Step 2: Calculate the probability of visiting each shop according to its capacity
+  ;step 3: Generate frequencies of shopping and leisure for people
+  ;Step 4: genearte shopping and leisuring activities according to people's frequency
+  
+  ;(1) step 1: divide shops into three groups accoding to their places (around work/study place, around home, and other places)
   ask people with [count in-shopping-neighbors = 0 and count in-leisure-neighbors = 0 and (weekday-shopping != 0 or weekend-shopping != 0 or weekday-leisure != 0 or weekend-leisure != 0)]
   [
     let home-shopping no-turtles
     let ws-shopping no-turtles
     let other-shopping no-turtles
     
-    ;家附近的shopping places
+    ;shopping places around home
     set home-shopping shops with [category = 1] in-radius 5
     if count home-shopping < 10 [set home-shopping min-n-of 10 shops with [category = 1] [distance myself]]
     let home-shopping1 []
     let home-shopping-prob []
     ask home-shopping [set home-shopping1 lput who home-shopping1 set home-shopping-prob lput capacity home-shopping-prob]
     
-    ;学校/工作地附近的shopping places
+    ;shopping places around work/study place
     if count in-student-neighbors = 1 
     [
       ask one-of in-student-neighbors 
@@ -48,20 +54,21 @@ to generate-daily-plan
     let ws-shopping-prob []
     ask ws-shopping [set ws-shopping1 lput who ws-shopping1 set ws-shopping-prob lput capacity ws-shopping-prob]
   
-    ;其他地区的shopping places
+    ;shopping places at other places
     set other-shopping shops with [category = 1 and not member? self home-shopping and not member? self ws-shopping]
     let other-shopping-prob []
     let other-shopping1 []
     ask other-shopping [set other-shopping1 lput who other-shopping1 set other-shopping-prob lput capacity other-shopping-prob]
     
-    ;将leisure places （即shops with category = 2）分类为home-leisure、ws-leisure、other-leisure
+    
     let home-leisure no-turtles
     let ws-leisure no-turtles
     let other-leisure no-turtles
-    ;home leisure
+    ;shopping places around home
     set home-leisure shops with [category = 2] in-radius 5 
     if count home-leisure < 10 [set home-leisure min-n-of 10 shops with [category = 2] [distance myself]]
-    ;计算每个shops被分到客人的概率
+    
+    ;Step 2: Calculate the probability of visiting each shop according to its capacity
     let home-leisure1 []
     let home-leisure-prob []
     ask home-leisure [set home-leisure1 lput who home-leisure1 set home-leisure-prob lput capacity home-leisure-prob]
@@ -93,11 +100,12 @@ to generate-daily-plan
     let other-leisure-prob []
     ask other-leisure [set other-leisure1 lput who other-leisure1 set other-leisure-prob lput capacity other-leisure-prob]
     
+    ;step 3: Generate frequencies of shopping and leisure for people
     (ifelse
-      ;工作日不购物
+      ;0 shopping frequency on weekdays
       weekday-shopping = 0 []
       
-      ;工作日购物1~5次
+      ;1 to 5 shopping frequency on weekdays
       weekday-shopping >= 1 and weekday-shopping <= 5 
       [
         let fre1 1 + random 5
@@ -112,7 +120,7 @@ to generate-daily-plan
         generate-a-shopping loc1 fre1 1 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
       ]
       
-      ;工作日购物6~10次
+      ;6 to 10 shopping frequency on weekdays
       weekday-shopping >= 6 and weekday-shopping <= 10
       [
         let fre1 5
@@ -135,7 +143,7 @@ to generate-daily-plan
         generate-a-shopping loc2 fre2 1 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
       ]
       
-      ;工作日购物11~15次
+      ;11 to 15 shopping frequency on weekdays
       [
         let fre1 5
         let weekdayleisure [1 2 3]
@@ -169,10 +177,10 @@ to generate-daily-plan
     )
     
     (ifelse
-      ;非工作日不购物
+      ;0 shopping frequency on weekend
       weekend-shopping = 0 []
       
-      ;非工作日购物1~5次
+      ;1~5 shopping frequency on weekend
       weekend-shopping >= 1 and weekend-shopping <= 5 
       [
         let fre1 1 + random 5
@@ -187,7 +195,7 @@ to generate-daily-plan
         generate-a-shopping loc1 fre1 2 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
       ]
       
-      ;非工作日购物6~10次
+      ;6~10 shopping frequency on weekend
       weekend-shopping >= 6 and weekend-shopping <= 10
       [
         let fre1 5
@@ -210,7 +218,7 @@ to generate-daily-plan
         generate-a-shopping loc2 fre2 2 home-shopping1 home-shopping-prob ws-shopping1 ws-shopping-prob other-shopping1 other-shopping-prob
       ]
       
-      ;非工作日购物11~15次
+      ;11~15 shopping frequency on weekend
       [
         let fre1 5
         let weekendleisure [1 2 3]
@@ -244,10 +252,10 @@ to generate-daily-plan
     )
     
     (ifelse
-      ;工作日不休闲
+      ;0 leisure frequency on weekdays
       weekday-leisure = 0 []
       
-      ;工作日休闲1~5次
+      ;1~5 leisure frequency on weekdays
       weekday-leisure >= 1 and weekday-leisure <= 5 
       [
         let fre1 1 + random 5
@@ -262,7 +270,7 @@ to generate-daily-plan
         generate-a-leisure loc1 fre1 1 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
       ]
       
-      ;工作日休闲6~10次
+      ;6~10 leisure frequency on weekdays
       weekday-leisure >= 6 and weekday-leisure <= 10
       [
         let fre1 5
@@ -285,7 +293,7 @@ to generate-daily-plan
         generate-a-leisure loc2 fre2 1 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
       ]
       
-      ;工作日休闲11~15次
+      ;11~15 leisure frequency on weekdays
       [
         let fre1 5
         let weekdayleisure [1 2 3]
@@ -319,10 +327,10 @@ to generate-daily-plan
     )
     
     (ifelse
-      ;非工作日不休闲
+      ;0 leisure frequency on weekend
       weekend-leisure = 0 []
       
-      ;非工作日休闲1~5次
+      ;1~5 leisure frequency on weekend
       weekend-leisure >= 1 and weekend-leisure <= 5 
       [
         let fre1 1 + random 5
@@ -337,7 +345,7 @@ to generate-daily-plan
         generate-a-leisure loc1 fre1 2 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
       ]
       
-      ;非工作日休闲6~10次
+      ;6~10 leisure frequency on weekend
       weekend-leisure >= 6 and weekend-leisure <= 10
       [
         let fre1 5
@@ -360,7 +368,7 @@ to generate-daily-plan
         generate-a-leisure loc2 fre2 2 home-leisure1 home-leisure-prob ws-leisure1 ws-leisure-prob other-leisure1 other-leisure-prob
       ]
       
-      ;非工作日休闲11~15次
+      ;11~15 leisure frequency on weekend
       [
         let fre1 5
         let weekendleisure [1 2 3]
@@ -396,14 +404,15 @@ to generate-daily-plan
 end
 
 to generate-a-shopping [p-loc p-frequency p-date p-home-shopping p-home-shopping-prob p-ws-shopping p-ws-shopping-prob p-other-shopping p-other-shopping-prob]
-  if p-loc = 1 ;公司/学校附近的shopping
+  ;This function is used to generate a shopping activity
+  if p-loc = 1 ;if the shopping is happening arround work or study place
   [
     ifelse count in-student-neighbors = 0 and count in-employee-neighbors = 0 
     [
-      ;如果没有公司/学校，需求被转移至其他地区
-      ifelse random-float 1 > 0.5
+      ;If this person does not need to go to work or school, this shopping activity will be allocated to other places
+      ifelse random-float 1 > 0.5 ;50% chance of allocating to shops around home, and 50% chance of allocating to shops at other places
       [
-        ;转移至home-shopping
+        ;allocating to shops around home
         py:set "homeshopping" p-home-shopping
         py:set "homeshoppingprob" p-home-shopping-prob
         (py:run
@@ -421,7 +430,7 @@ to generate-a-shopping [p-loc p-frequency p-date p-home-shopping p-home-shopping
         ]
       ]
       [
-        ;转移至other-shopping
+        ;allocating to shops at other places
         py:set "othershopping" p-other-shopping
         py:set "othershoppingprob" p-other-shopping-prob
         (py:run
@@ -440,7 +449,7 @@ to generate-a-shopping [p-loc p-frequency p-date p-home-shopping p-home-shopping
       ]
     ]
     [
-      ;有公司/学校，需求发生再公司/学校附近
+      ;This person needs to go to work or school, and shopping activities occur near their workplace or school
       py:set "wsshopping" p-ws-shopping
       py:set "wsshoppingprob" p-ws-shopping-prob
       (py:run
@@ -458,7 +467,7 @@ to generate-a-shopping [p-loc p-frequency p-date p-home-shopping p-home-shopping
       ]
     ]
   ]
-  if p-loc = 2 ;家附近的shopping
+  if p-loc = 2 ;if the shopping is happening at shops around home
   [
     py:set "homeshopping" p-home-shopping
     py:set "homeshoppingprob" p-home-shopping-prob
@@ -476,7 +485,7 @@ to generate-a-shopping [p-loc p-frequency p-date p-home-shopping p-home-shopping
       ask one-of my-shoppings with [other-end = candidate][set frequency frequency + p-frequency set date p-date]
     ]
   ]
-  if p-loc = 3;其他地点的shopping
+  if p-loc = 3;if the shopping is happening at shops at other place
   [
     py:set "othershopping" p-other-shopping
     py:set "othershoppingprob" p-other-shopping-prob
@@ -497,18 +506,15 @@ to generate-a-shopping [p-loc p-frequency p-date p-home-shopping p-home-shopping
 end
 
 to generate-a-leisure [p-loc p-frequency p-date p-home-leisure p-home-leisure-prob p-ws-leisure p-ws-leisure-prob p-other-leisure p-other-leisure-prob]
-  if p-loc = 1 ;公司/学校附近的leisure
+  if p-loc = 1 ;This function is used to generate a leisure activity. The rules of generation is the same as generating a shopping activity
   [
     ifelse count in-student-neighbors = 0 and count in-employee-neighbors = 0 
     [
-      ;如果没有公司/学校，需求被转移至其他地区
       ifelse random-float 1 > 0.5
       [
-        ;转移至home-leisure
         py:set "homeleisure" p-home-leisure
         py:set "homeleisureprob" p-home-leisure-prob
         (py:run
-          "import random"
           "result = random.choices (homeleisure, homeleisureprob)"
         )
         let candidate shop item 0 py:runresult "result"
@@ -522,11 +528,9 @@ to generate-a-leisure [p-loc p-frequency p-date p-home-leisure p-home-leisure-pr
         ]
       ]
       [
-        ;转移至other-leisure
         py:set "otherleisure" p-other-leisure
         py:set "otherleisureprob" p-other-leisure-prob
         (py:run
-          "import random"
           "result = random.choices (otherleisure, otherleisureprob)"
         )
         let candidate shop item 0 py:runresult "result"
@@ -541,11 +545,9 @@ to generate-a-leisure [p-loc p-frequency p-date p-home-leisure p-home-leisure-pr
       ]
     ]
     [
-      ;有公司/学校，需求发生再公司/学校附近
       py:set "wsleisure" p-ws-leisure
       py:set "wsleisureprob" p-ws-leisure-prob
       (py:run
-        "import random"
         "result = random.choices (wsleisure, wsleisureprob)"
       )
       let candidate shop item 0 py:runresult "result"
@@ -559,12 +561,11 @@ to generate-a-leisure [p-loc p-frequency p-date p-home-leisure p-home-leisure-pr
       ]
     ]
   ]
-  if p-loc = 2 ;家附近的leisure
+  if p-loc = 2
   [
     py:set "homeleisure" p-home-leisure
     py:set "homeleisureprob" p-home-leisure-prob
     (py:run
-      "import random"
       "result = random.choices (homeleisure, homeleisureprob)"
     )
     let candidate shop item 0 py:runresult "result"
@@ -577,12 +578,11 @@ to generate-a-leisure [p-loc p-frequency p-date p-home-leisure p-home-leisure-pr
       ask one-of my-leisures with [other-end = candidate][set frequency frequency + p-frequency set date p-date]
     ]
   ]
-  if p-loc = 3;其他地点的leisure
+  if p-loc = 3
   [
     py:set "otherleisure" p-other-leisure
     py:set "otherleisureprob" p-other-leisure-prob
     (py:run
-      "import random"
       "result = random.choices (otherleisure, otherleisureprob)"
     )
     let candidate shop item 0 py:runresult "result"
@@ -598,20 +598,21 @@ to generate-a-leisure [p-loc p-frequency p-date p-home-leisure p-home-leisure-pr
 end
 
 to update-daily-plan
-  ;补齐shopping
+  ;This function is used to update people's shopping and leisure activities. 
+  ;Step 1: select people whose shopping/leisure activities are less than their preset number (due to Due to changes in residences, work, education, shops closure, etc)
+  ;Step 2: Calculate how many more activities are needed
+  ;Setp 3: generate activities
   ask people with [sum [frequency] of my-shoppings with [date = 1] < weekday-shopping or sum [frequency] of my-shoppings with [date = 2] < weekend-shopping]
   [
+    ;group shops into three categories according to their location
     let home-shopping no-turtles
     let ws-shopping no-turtles
     let other-shopping no-turtles
-    ;家附近的shopping places
     set home-shopping shops with [category = 1] in-radius 5
     if count home-shopping < 10 [set home-shopping min-n-of 10 shops with [category = 1] [distance myself]]
     let home-shopping1 []
     let home-shopping-prob []
     ask home-shopping [set home-shopping1 lput who home-shopping1 set home-shopping-prob lput capacity home-shopping-prob]
-    
-    ;学校/工作地附近的shopping places
     if count in-student-neighbors = 1 
     [
       ask one-of in-student-neighbors 
@@ -631,13 +632,13 @@ to update-daily-plan
     let ws-shopping1 []
     let ws-shopping-prob []
     ask ws-shopping [set ws-shopping1 lput who ws-shopping1 set ws-shopping-prob lput capacity ws-shopping-prob]
-  
-    ;其他地区的shopping places
     set other-shopping shops with [category = 1 and not member? self home-shopping and not member? self ws-shopping]
     let other-shopping-prob []
     let other-shopping1 []
     ask other-shopping [set other-shopping1 lput who other-shopping1 set other-shopping-prob lput capacity other-shopping-prob]
     
+    
+    ;Calculate how many activities are missing, and genearte new activities to meet the needs
     if sum [frequency] of my-shoppings with [date = 1] < weekday-shopping
     [
       let n1 weekday-shopping - sum [frequency] of my-shoppings
@@ -649,7 +650,6 @@ to update-daily-plan
           py:set "weekdayshopping" weekdayshopping
           py:set "weekdayshoppingprob" weekdayshoppingloc
           (py:run
-            "import random"
             "result = random.choices (weekdayshopping, weekdayshoppingprob)"
           )
           let loc1 item 0 py:runresult "result"
@@ -663,7 +663,6 @@ to update-daily-plan
           py:set "weekendshopping" weekendshopping
           py:set "weekendshoppingprob" weekendshoppingloc
           (py:run
-            "import random"
             "result = random.choices (weekendshopping, weekendshoppingprob)"
           )
           let loc1 item 0 py:runresult "result"
@@ -671,7 +670,6 @@ to update-daily-plan
           
           let fre2 random n1 - 5
           (py:run
-            "import random"
             "result2 = random.choices (weekendshopping, weekendshoppingprob)"
           )
           let loc2 item 0 py:runresult "result2"
@@ -685,7 +683,6 @@ to update-daily-plan
           py:set "weekdayshopping" weekdayshopping
           py:set "weekdayshoppingprob" weekdayshoppingloc
           (py:run
-            "import random"
             "result = random.choices (weekdayshopping, weekdayshoppingprob)"
           )
           let loc1 item 0 py:runresult "result"
@@ -695,7 +692,6 @@ to update-daily-plan
           py:set "weekdayshopping" weekdayshopping
           py:set "weekdayshoppingprob" weekdayshoppingloc
           (py:run
-            "import random"
             "result = random.choices (weekdayshopping, weekdayshoppingprob)"
           )
           let loc2 item 0 py:runresult "result"
@@ -703,7 +699,6 @@ to update-daily-plan
           
           let fre3 random n1 - 10
           (py:run
-            "import random"
             "result2 = random.choices (weekdayshopping, weekdayshoppingprob)"
           )
           let loc3 item 0 py:runresult "result2"
@@ -713,20 +708,16 @@ to update-daily-plan
     ]
   ]
   
-  ;补齐leisure
   ask people with [sum [frequency] of my-leisures with [date = 1] < weekday-leisure or sum [frequency] of my-leisures with [date = 2] < weekend-leisure]
   [
     let home-leisure no-turtles
     let ws-leisure no-turtles
     let other-leisure no-turtles
-    ;家附近的leisure places
     set home-leisure shops with [category = 1] in-radius 5
     if count home-leisure < 10 [set home-leisure min-n-of 10 shops with [category = 1] [distance myself]]
     let home-leisure1 []
     let home-leisure-prob []
     ask home-leisure [set home-leisure1 lput who home-leisure1 set home-leisure-prob lput capacity home-leisure-prob]
-    
-    ;学校/工作地附近的leisure places
     if count in-student-neighbors = 1 
     [
       ask one-of in-student-neighbors 
@@ -746,8 +737,6 @@ to update-daily-plan
     let ws-leisure1 []
     let ws-leisure-prob []
     ask ws-leisure [set ws-leisure1 lput who ws-leisure1 set ws-leisure-prob lput capacity ws-leisure-prob]
-  
-    ;其他地区的leisure places
     set other-leisure shops with [category = 1 and not member? self home-leisure and not member? self ws-leisure]
     let other-leisure-prob []
     let other-leisure1 []
@@ -764,7 +753,6 @@ to update-daily-plan
           py:set "weekdayleisure" weekdayleisure
           py:set "weekdayleisureprob" weekdayleisureloc
           (py:run
-            "import random"
             "result = random.choices (weekdayleisure, weekdayleisureprob)"
           )
           let loc1 item 0 py:runresult "result"
@@ -778,7 +766,6 @@ to update-daily-plan
           py:set "weekendleisure" weekendleisure
           py:set "weekendleisureprob" weekendleisureloc
           (py:run
-            "import random"
             "result = random.choices (weekendleisure, weekendleisureprob)"
           )
           let loc1 item 0 py:runresult "result"
@@ -786,7 +773,6 @@ to update-daily-plan
           
           let fre2 random n1 - 5
           (py:run
-            "import random"
             "result2 = random.choices (weekendleisure, weekendleisureprob)"
           )
           let loc2 item 0 py:runresult "result2"
@@ -800,7 +786,6 @@ to update-daily-plan
           py:set "weekdayleisure" weekdayleisure
           py:set "weekdayleisureprob" weekdayleisureloc
           (py:run
-            "import random"
             "result = random.choices (weekdayleisure, weekdayleisureprob)"
           )
           let loc1 item 0 py:runresult "result"
@@ -810,7 +795,6 @@ to update-daily-plan
           py:set "weekdayleisure" weekdayleisure
           py:set "weekdayleisureprob" weekdayleisureloc
           (py:run
-            "import random"
             "result = random.choices (weekdayleisure, weekdayleisureprob)"
           )
           let loc2 item 0 py:runresult "result"
@@ -818,7 +802,6 @@ to update-daily-plan
           
           let fre3 random n1 - 10
           (py:run
-            "import random"
             "result2 = random.choices (weekdayleisure, weekdayleisureprob)"
           )
           let loc3 item 0 py:runresult "result2"
